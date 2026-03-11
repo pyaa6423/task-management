@@ -244,6 +244,12 @@ export class TimelineRenderer {
 
   private navigateDate(delta: -1 | 1): void {
     const newDate = addDays(this.data.currentDate, delta);
-    this.onDataChange({ ...this.data, currentDate: newDate });
+    const newData = { ...this.data, currentDate: newDate };
+    this.data = newData;
+    if (this.dateLabel) {
+      this.dateLabel.setText(formatDateDisplay(newDate));
+    }
+    this.renderEvents();
+    this.onDataChange(newData);
   }
 }
