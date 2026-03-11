@@ -19,7 +19,11 @@ export function generateId(): string {
 }
 
 export function isoDateToday(): string {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function formatDateDisplay(isoDate: string): string {
@@ -32,7 +36,12 @@ export function formatDateDisplay(isoDate: string): string {
   const tomorrow = new Date(todayDate);
   tomorrow.setDate(todayDate.getDate() + 1);
 
-  const formatYMD = (d: Date) => d.toISOString().split("T")[0];
+  const formatYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
+  };
 
   let prefix = "";
   if (isoDate === today) prefix = "今日 · ";
@@ -53,5 +62,8 @@ export function addDays(isoDate: string, delta: number): string {
   const [year, month, day] = isoDate.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   date.setDate(date.getDate() + delta);
-  return date.toISOString().split("T")[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }

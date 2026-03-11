@@ -46,7 +46,7 @@ export interface PluginData {
 
 export const DEFAULT_PLUGIN_DATA: PluginData = {
   events: [],
-  currentDate: new Date().toISOString().split("T")[0],
+  currentDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })(),
   defaultColor: "blue",
 };
 
