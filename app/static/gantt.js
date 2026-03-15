@@ -199,7 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         currentProjectId = pid;
-        updateAddTaskLink();
         navStack = [];
         colorOverrides = {};
         expandedTaskId = null;
@@ -251,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const card = document.createElement("div");
             card.className = "overview-nav-card";
             card.addEventListener("click", () => {
-                projectSelect.value = project.id;
+                projectSelect.value = String(project.id);
                 projectSelect.dispatchEvent(new Event("change"));
             });
             const name = document.createElement("span");
@@ -371,14 +370,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const sepProject = projects.find(p => name === `■ ${p.name}`);
             if (sepProject) {
-                projectSelect.value = sepProject.id;
+                projectSelect.value = String(sepProject.id);
                 projectSelect.dispatchEvent(new Event("change"));
                 return;
             }
 
             const bar = allBars.find(b => b.name === name && b._projectId);
             if (bar) {
-                projectSelect.value = bar._projectId;
+                projectSelect.value = String(bar._projectId);
                 projectSelect.dispatchEvent(new Event("change"));
             }
         });
@@ -423,7 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 label.addEventListener("click", () => {
                     const proj = projects.find(p => p.name === projectName);
                     if (proj) {
-                        projectSelect.value = proj.id;
+                        projectSelect.value = String(proj.id);
                         projectSelect.dispatchEvent(new Event("change"));
                     }
                 });

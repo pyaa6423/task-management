@@ -2,12 +2,39 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.services import task_service
+from app.models.task import Task
 from app.models.project import Project
 
 router = APIRouter(tags=["task_pages"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def _flatten_tasks(tasks, depth=0, exclude_id=None):
+    """Flatten task tree into a list with depth for indentation."""
+    result = []
+    for t in tasks:
+        if t.id == exclude_id:
+            continue
+        prefix = "─" * depth + " " if depth > 0 else ""
+        result.append({"id": t.id, "title": f"{prefix}{t.title}", "depth": depth})
+        if hasattr(t, "children") and t.children:
+            result.extend(_flatten_tasks(t.children, depth + 1, exclude_id))
+    return result
+
+
+async def _get_all_tasks_tree(db, project_id):
+    """Get all tasks in project as a tree (top-level with children loaded)."""
+    stmt = (
+        select(Task)
+        .options(selectinload(Task.children).selectinload(Task.children))
+        .where(Task.project_id == project_id, Task.parent_id.is_(None))
+        .order_by(Task.priority.asc())
+    )
+    return list((await db.scalars(stmt)).all())
 
 
 @router.get("/projects/{project_id}/tasks/new", response_class=HTMLResponse)
@@ -21,15 +48,8 @@ async def new_task_page(
         from app.exceptions import NotFoundError
         raise NotFoundError("Project", project_id)
 
-    # Load top-level tasks for parent select dropdown
-    tasks = await task_service.get_tasks_by_project(db, project_id)
-    tasks_data = [
-        {
-            "id": t.id,
-            "title": t.title,
-        }
-        for t in tasks
-    ]
+    tree = await _get_all_tasks_tree(db, project_id)
+    tasks_data = _flatten_tasks(tree)
 
     project_data = {
         "id": project.id,
@@ -53,16 +73,8 @@ async def edit_task_page(
     task = await task_service.get_task(db, task_id)
     project = await db.get(Project, task.project_id)
 
-    # Load top-level tasks for parent select dropdown (exclude self)
-    all_tasks = await task_service.get_tasks_by_project(db, task.project_id)
-    tasks_data = [
-        {
-            "id": t.id,
-            "title": t.title,
-        }
-        for t in all_tasks
-        if t.id != task.id
-    ]
+    tree = await _get_all_tasks_tree(db, task.project_id)
+    tasks_data = _flatten_tasks(tree, exclude_id=task.id)
 
     task_data = {
         "id": task.id,
