@@ -1,9 +1,0 @@
-{
-  "id": "task-management",
-  "name": "Time Management Timeline",
-  "version": "1.0.0",
-  "minAppVersion": "1.0.0",
-  "description": "A visual timeline for daily time management. Click to add events, color-code them, and set start/end times.",
-  "author": "tyama",
-  "isDesktopOnly": false
-}

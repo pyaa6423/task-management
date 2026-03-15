@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Gantt Chart - Task Management{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="gantt-controls">
+    <label for="project-select">Project:</label>
+    <select id="project-select">
+        <option value="">-- Select Project --</option>
+        {% for project in projects %}
+        <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+    </select>
+    <div class="view-modes">
+        <button data-mode="Day" class="active">Day</button>
+        <button data-mode="Week">Week</button>
+        <button data-mode="Month">Month</button>
+    </div>
+</div>
+<div id="gantt-container">
+    <p class="placeholder">Select a project to view the Gantt chart.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script src="/static/gantt.js"></script>
+{% endblock %}
