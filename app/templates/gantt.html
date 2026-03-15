@@ -10,7 +10,7 @@
 <div class="gantt-controls">
     <label for="project-select">プロジェクト:</label>
     <select id="project-select">
-        <option value="">-- 選択してください --</option>
+        <option value="">全プロジェクト</option>
         {% for project in projects %}
         <option value="{{ project.id }}">{{ project.name }}</option>
         {% endfor %}
@@ -35,11 +35,11 @@
     </div>
 </div>
 <div id="gantt-container">
-    <p class="placeholder">プロジェクトを選択してください</p>
+    <p class="placeholder">読み込み中...</p>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script src="/static/frappe-gantt.min.js"></script>
 <script src="/static/gantt.js"></script>
 {% endblock %}

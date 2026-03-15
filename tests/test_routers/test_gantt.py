@@ -20,6 +20,8 @@ async def test_gantt_project_tasks(client):
     assert len(data) == 1
     assert data[0]["name"] == "T1"
     assert data[0]["has_children"] is False
+    assert data[0]["completed_count"] == 0
+    assert data[0]["total_count"] == 0
 
 
 async def test_gantt_task_children(client):
@@ -36,5 +38,7 @@ async def test_gantt_task_children(client):
     response = await client.get(f"/api/v1/gantt/tasks/{task_id}/children")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "C1"
+    assert data["parent"]["name"] == "T"
+    assert data["parent"]["total_count"] == 1
+    assert len(data["children"]) == 1
+    assert data["children"][0]["name"] == "C1"
