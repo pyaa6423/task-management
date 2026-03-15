@@ -5,28 +5,46 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f5f5;
-    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: #f7f7f7;
+    color: #484848;
+    line-height: 1.6;
 }
 
+/* ── Header ── */
 header {
-    background: #2c3e50;
-    color: white;
-    padding: 1rem 2rem;
+    background: #ffffff;
+    color: #484848;
+    padding: 0.875rem 2rem;
+    border-bottom: 3px solid #e60012;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 header a {
-    color: white;
+    color: #484848;
     text-decoration: none;
 }
 
+header a:hover {
+    color: #e60012;
+}
+
+/* ── Main ── */
 main {
     padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
 }
 
+/* ── Controls ── */
 .gantt-controls {
     display: flex;
     align-items: center;
@@ -35,60 +53,303 @@ main {
     flex-wrap: wrap;
 }
 
-#project-select {
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    min-width: 200px;
+.gantt-controls label {
+    font-weight: 600;
+    color: #484848;
+    font-size: 0.9rem;
 }
 
+.gantt-controls select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    border: 2px solid #d9d9d9;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #484848;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.gantt-controls select:focus {
+    border-color: #e60012;
+}
+
+#project-select {
+    min-width: 220px;
+}
+
+/* ── Color theme selector ── */
+.theme-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.theme-swatches {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.theme-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.theme-swatch:hover {
+    transform: scale(1.2);
+}
+
+.theme-swatch.active {
+    border-color: #484848;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #484848;
+}
+
+/* ── View mode buttons ── */
 .view-modes {
     display: flex;
-    gap: 0.25rem;
+    gap: 0;
+    margin-left: auto;
 }
 
 .view-modes button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ccc;
-    background: white;
+    padding: 0.5rem 1.125rem;
+    border: 2px solid #d9d9d9;
+    background: #ffffff;
+    color: #484848;
     cursor: pointer;
-    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.view-modes button:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+.view-modes button:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+.view-modes button:not(:first-child) {
+    border-left: none;
+}
+
+.view-modes button:hover {
+    background: #fef0f0;
+    border-color: #e60012;
+    color: #e60012;
 }
 
 .view-modes button.active {
-    background: #3498db;
-    color: white;
-    border-color: #3498db;
+    background: #e60012;
+    color: #ffffff;
+    border-color: #e60012;
 }
 
+/* ── Gantt Container ── */
 #gantt-container {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 1.25rem;
     min-height: 300px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .placeholder {
     text-align: center;
-    color: #999;
-    padding: 4rem;
+    color: #a0a0a0;
+    padding: 5rem;
+    font-size: 0.95rem;
 }
 
-/* Priority colors */
-.bar-priority-high .bar-progress, .bar-priority-high .bar {
-    fill: #e74c3c !important;
+/* ── Back button ── */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.875rem;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    color: #e60012;
+    border: 2px solid #e60012;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.bar-priority-medium .bar-progress, .bar-priority-medium .bar {
-    fill: #f39c12 !important;
+.back-button:hover {
+    background: #e60012;
+    color: #ffffff;
 }
 
-.bar-priority-low .bar-progress, .bar-priority-low .bar {
-    fill: #27ae60 !important;
+/* ── frappe-gantt base overrides ── */
+
+.gantt .bar-label {
+    fill: #fff !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
 }
 
-.bar-completed .bar-progress, .bar-completed .bar {
-    opacity: 0.5;
+.gantt .bar-label.big {
+    fill: #484848 !important;
+}
+
+.gantt .grid-header {
+    fill: #fafafa !important;
+    stroke: #e8e8e8 !important;
+}
+
+.gantt .grid-row {
+    fill: #ffffff !important;
+}
+
+.gantt .grid-row:nth-child(even) {
+    fill: #fafafa !important;
+}
+
+.gantt .row-line {
+    stroke: #e0e0e0 !important;
+}
+
+.gantt .tick {
+    stroke: #c8c8c8 !important;
+}
+
+.gantt .today-highlight {
+    fill: rgba(230, 0, 18, 0.12) !important;
+}
+
+.gantt .upper-text {
+    fill: #333 !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+}
+
+.gantt .lower-text {
+    fill: #484848 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    transform: translateY(-8px);
+}
+
+/* Weekend / holiday overlays */
+.nonworkday-overlay {
+    pointer-events: none;
+}
+
+/* Month separator lines */
+.month-separator {
+    pointer-events: none;
+}
+
+/* Day-of-week label (tspan inside lower-text) */
+.dow-label {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+
+.gantt .details-container {
+    background: #ffffff !important;
+    border: 2px solid #e60012 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.gantt .details-container .title {
+    color: #e60012 !important;
+    font-weight: 700 !important;
+}
+
+/* Completed tasks — always muted */
+.bar-completed .bar,
+.bar-completed .bar-progress {
+    opacity: 0.45 !important;
+}
+
+/* Scrollbar */
+#gantt-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+#gantt-container::-webkit-scrollbar-track {
+    background: #f7f7f7;
+    border-radius: 4px;
+}
+
+#gantt-container::-webkit-scrollbar-thumb {
+    background: #d9d9d9;
+    border-radius: 4px;
+}
+
+#gantt-container::-webkit-scrollbar-thumb:hover {
+    background: #e60012;
+}
+
+/* ── Color legend / per-item picker ── */
+.color-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+}
+
+.color-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #484848;
+    cursor: default;
+    transition: box-shadow 0.15s;
+    position: relative;
+}
+
+.color-legend-item:hover {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.15);
+    position: relative;
+}
+
+.color-dot:hover {
+    transform: scale(1.2);
+}
+
+/* Native color input hidden behind the dot */
+.color-legend-item input[type="color"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
 }

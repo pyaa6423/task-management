@@ -8,13 +8,26 @@
 
 {% block content %}
 <div class="gantt-controls">
-    <label for="project-select">Project:</label>
+    <label for="project-select">プロジェクト:</label>
     <select id="project-select">
-        <option value="">-- Select Project --</option>
+        <option value="">-- 選択してください --</option>
         {% for project in projects %}
         <option value="{{ project.id }}">{{ project.name }}</option>
         {% endfor %}
     </select>
+
+    <div class="theme-selector">
+        <label>カラー:</label>
+        <div class="theme-swatches">
+            <span class="theme-swatch active" data-theme="nintendo" style="background: #e60012;" title="Nintendo"></span>
+            <span class="theme-swatch" data-theme="mario" style="background: #049cd8;" title="Mario"></span>
+            <span class="theme-swatch" data-theme="splatoon" style="background: #2ae0c8;" title="Splatoon"></span>
+            <span class="theme-swatch" data-theme="zelda" style="background: #2d8a4e;" title="Zelda"></span>
+            <span class="theme-swatch" data-theme="kirby" style="background: #f4a4b8;" title="Kirby"></span>
+            <span class="theme-swatch" data-theme="monochrome" style="background: #484848;" title="Monochrome"></span>
+        </div>
+    </div>
+
     <div class="view-modes">
         <button data-mode="Day" class="active">Day</button>
         <button data-mode="Week">Week</button>
@@ -22,7 +35,7 @@
     </div>
 </div>
 <div id="gantt-container">
-    <p class="placeholder">Select a project to view the Gantt chart.</p>
+    <p class="placeholder">プロジェクトを選択してください</p>
 </div>
 {% endblock %}
 
