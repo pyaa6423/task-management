@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}タスク編集{% else %}タスク追加{% endif %} - {{ project.name }}{% endblock %}
+
+{% block head %}
+<style>
+    .task-form-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.4rem 0.875rem;
+        background: #ffffff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-link:hover {
+        background: #e60012;
+        color: #ffffff;
+    }
+    .task-form-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #333;
+    }
+
+    /* Form card */
+    .form-card {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        max-width: 680px;
+    }
+    .form-card-header {
+        background: #e60012;
+        color: #fff;
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .form-card-body {
+        padding: 1.5rem 1.25rem;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-bottom: 1rem;
+    }
+    .form-group label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        background: #fff;
+        color: #484848;
+        outline: none;
+        transition: border-color 0.2s;
+        font-family: inherit;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        border-color: #e60012;
+    }
+    .form-group textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+    .form-row .form-group {
+        flex: 1;
+    }
+    .form-hint {
+        font-size: 0.7rem;
+        color: #999;
+    }
+    .form-required {
+        color: #e60012;
+    }
+
+    /* Buttons */
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        align-items: center;
+    }
+    .btn-submit {
+        padding: 0.6rem 1.5rem;
+        background: #e60012;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-submit:hover {
+        background: #c4000f;
+    }
+    .btn-submit:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    .btn-delete {
+        padding: 0.6rem 1.5rem;
+        background: #fff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: auto;
+    }
+    .btn-delete:hover {
+        background: #e60012;
+        color: #fff;
+    }
+
+    .form-error {
+        color: #e60012;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="task-form-header">
+    <a href="/gantt#project-{{ project.id }}" class="back-link">&#9664; ガントチャートへ戻る</a>
+    <span class="task-form-title">{{ project.name }} - {% if is_edit %}タスク編集{% else %}タスク追加{% endif %}</span>
+</div>
+
+<div class="form-card">
+    <div class="form-card-header">
+        {% if is_edit %}タスクを編集{% else %}新しいタスクを作成{% endif %}
+    </div>
+    <div class="form-card-body">
+        <form id="task-form">
+            <div class="form-group">
+                <label for="title">タイトル <span class="form-required">*</span></label>
+                <input type="text" id="title" name="title" placeholder="タスクのタイトル" required
+                    value="{{ task.title if task else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="description">説明</label>
+                <textarea id="description" name="description" placeholder="タスクの説明（任意）">{{ task.description if task else '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start_time">開始日時</label>
+                    <input type="datetime-local" id="start_time" name="start_time"
+                        value="{{ task.start_time if task else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="end_time">終了日時</label>
+                    <input type="datetime-local" id="end_time" name="end_time"
+                        value="{{ task.end_time if task else '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="assigned_member">担当者</label>
+                    <input type="text" id="assigned_member" name="assigned_member" placeholder="担当者名"
+                        value="{{ task.assigned_member if task else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="priority">優先度</label>
+                    <input type="number" id="priority" name="priority" value="{{ task.priority if task else 0 }}">
+                    <span class="form-hint">数値が小さいほど優先度が高い</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="parent_id">親タスク</label>
+                <select id="parent_id" name="parent_id">
+                    <option value="">なし（トップレベルタスク）</option>
+                    {% for t in tasks %}
+                    <option value="{{ t.id }}" {% if task and task.parent_id == t.id %}selected{% endif %}>{{ t.title }}</option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">親タスクを選択すると、子タスクとして作成されます</span>
+            </div>
+
+            <div class="form-error" id="form-error"></div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    {% if is_edit %}更新{% else %}作成{% endif %}
+                </button>
+                {% if is_edit %}
+                <button type="button" class="btn-delete" id="delete-btn">削除</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("task-form");
+    const errorEl = document.getElementById("form-error");
+    const submitBtn = document.getElementById("submit-btn");
+    const isEdit = {{ is_edit | tojson }};
+    const projectId = {{ project.id }};
+    const taskData = {{ task | tojson }};
+
+    // Check for parent_id query parameter (for child task creation)
+    const urlParams = new URLSearchParams(window.location.search);
+    const parentIdParam = urlParams.get("parent_id");
+    if (parentIdParam && !isEdit) {
+        const parentSelect = document.getElementById("parent_id");
+        if (parentSelect) {
+            parentSelect.value = parentIdParam;
+        }
+    }
+
+    function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.style.display = "block";
+    }
+
+    function hideError() {
+        errorEl.style.display = "none";
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const title = document.getElementById("title").value.trim();
+        if (!title) {
+            showError("タイトルは必須です");
+            return;
+        }
+
+        const body = { title };
+
+        const description = document.getElementById("description").value.trim();
+        if (description) body.description = description;
+
+        const startTime = document.getElementById("start_time").value;
+        if (startTime) body.start_time = startTime + ":00";
+
+        const endTime = document.getElementById("end_time").value;
+        if (endTime) body.end_time = endTime + ":00";
+
+        const assignedMember = document.getElementById("assigned_member").value.trim();
+        if (assignedMember) body.assigned_member = assignedMember;
+
+        const priority = parseInt(document.getElementById("priority").value) || 0;
+        body.priority = priority;
+
+        const parentId = document.getElementById("parent_id").value;
+
+        submitBtn.disabled = true;
+
+        try {
+            let url, method;
+
+            if (isEdit) {
+                url = `/api/v1/tasks/${taskData.id}`;
+                method = "PUT";
+            } else if (parentId) {
+                url = `/api/v1/tasks/${parentId}/children`;
+                method = "POST";
+            } else {
+                url = `/api/v1/projects/${projectId}/tasks`;
+                method = "POST";
+            }
+
+            const resp = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                showError(err.detail || "エラーが発生しました");
+                submitBtn.disabled = false;
+                return;
+            }
+
+            window.location.href = `/gantt#project-${projectId}`;
+        } catch (err) {
+            showError("通信エラーが発生しました");
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Delete button (edit mode only)
+    const deleteBtn = document.getElementById("delete-btn");
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+            if (!confirm("このタスクを削除しますか？この操作は取り消せません。")) return;
+
+            try {
+                const resp = await fetch(`/api/v1/tasks/${taskData.id}`, { method: "DELETE" });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    showError(err.detail || "削除に失敗しました");
+                    return;
+                }
+                window.location.href = `/gantt#project-${projectId}`;
+            } catch (err) {
+                showError("通信エラーが発生しました");
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

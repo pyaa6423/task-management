@@ -193,11 +193,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!pid) {
             currentProjectId = null; navStack = []; colorOverrides = {};
             ganttChart = null;
+
             if (!skipPushState) history.pushState({ view: "overview" }, "", "#overview");
             await loadOverview();
             return;
         }
         currentProjectId = pid;
+        updateAddTaskLink();
         navStack = [];
         colorOverrides = {};
         expandedTaskId = null;
@@ -447,6 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tid = projectMatch[2];
             projectSelect.value = pid;
             currentProjectId = pid;
+
             skipPushState = true;
             if (tid) {
                 navStack = [{ type: "project", projectId: pid }];
@@ -619,6 +622,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         setTimeout(() => addOverlays(ganttDiv), 50);
+
+        // Add task button
+        if (currentProjectId) {
+            const addBar = document.createElement("div");
+            addBar.className = "add-task-bar";
+            const addBtn = document.createElement("a");
+            addBtn.href = `/projects/${currentProjectId}/tasks/new`;
+            addBtn.className = "add-task-btn";
+            addBtn.textContent = "＋ タスクを追加";
+            addBar.appendChild(addBtn);
+            container.appendChild(addBar);
+        }
 
         // Task cards below gantt
         const cardsSection = document.createElement("div");
@@ -814,6 +829,24 @@ document.addEventListener("DOMContentLoaded", () => {
             checksLink.addEventListener("click", (e) => e.stopPropagation());
             card.appendChild(checksLink);
 
+            // Add child task link
+            const addChildLink = document.createElement("a");
+            addChildLink.className = "expand-card-checks-link";
+            addChildLink.href = `/projects/${currentProjectId}/tasks/new?parent_id=${child.id.replace("task-", "")}`;
+            addChildLink.textContent = "＋子タスク";
+            addChildLink.title = "子タスクを追加";
+            addChildLink.addEventListener("click", (e) => e.stopPropagation());
+            card.appendChild(addChildLink);
+
+            // Edit task link
+            const editLink = document.createElement("a");
+            editLink.className = "expand-card-checks-link";
+            editLink.href = `/tasks/${child.id.replace("task-", "")}/edit`;
+            editLink.textContent = "編集";
+            editLink.title = "タスクを編集";
+            editLink.addEventListener("click", (e) => e.stopPropagation());
+            card.appendChild(editLink);
+
             cards.appendChild(card);
         });
 
@@ -889,10 +922,28 @@ document.addEventListener("DOMContentLoaded", () => {
         checksLink.title = "達成項目を表示";
         checksLink.addEventListener("click", (e) => e.stopPropagation());
 
+        // Add child task link
+        const addChildLink = document.createElement("a");
+        addChildLink.className = "leaf-card-checks-link";
+        addChildLink.href = `/projects/${currentProjectId}/tasks/new?parent_id=${taskData.id.replace("task-", "")}`;
+        addChildLink.textContent = "＋子タスク";
+        addChildLink.title = "子タスクを追加";
+        addChildLink.addEventListener("click", (e) => e.stopPropagation());
+
+        // Edit task link
+        const editLink = document.createElement("a");
+        editLink.className = "leaf-card-checks-link";
+        editLink.href = `/tasks/${taskData.id.replace("task-", "")}/edit`;
+        editLink.textContent = "編集";
+        editLink.title = "タスクを編集";
+        editLink.addEventListener("click", (e) => e.stopPropagation());
+
         card.appendChild(check);
         card.appendChild(dot);
         card.appendChild(info);
         card.appendChild(checksLink);
+        card.appendChild(addChildLink);
+        card.appendChild(editLink);
         panel.appendChild(card);
         parentEl.appendChild(panel);
     }

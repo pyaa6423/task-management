@@ -428,6 +428,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
                 ${renderCheckItems(task.check_items)}
                 <a href="/tasks/${task.id}/checks" class="ms-checks-link">達成項目を編集</a>
+                <a href="/tasks/${task.id}/edit" class="ms-checks-link">編集</a>
             </div>`;
 
         if (task.children && task.children.length > 0) {
@@ -468,6 +469,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="project-dot"></div>
                 <div class="project-name">${escHtml(project.name)}</div>
                 ${dateInfo ? `<div class="project-dates">${escHtml(dateInfo)}</div>` : ""}
+                <a href="/projects/${project.id}/tasks/new" class="ms-checks-link" style="margin-left:auto;">＋ タスク追加</a>
             </div>`;
 
             if (!project.tasks || project.tasks.length === 0) {
