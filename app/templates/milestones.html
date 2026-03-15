@@ -314,6 +314,57 @@
         padding: 3rem;
         font-size: 0.95rem;
     }
+
+    /* Event nodes on timeline */
+    .event-node {
+        position: relative;
+        margin: 0.5rem 0;
+    }
+    .event-diamond {
+        position: absolute;
+        left: -37px;
+        top: 10px;
+        width: 14px;
+        height: 14px;
+        transform: rotate(45deg);
+        border: 2px solid #fff;
+        z-index: 2;
+    }
+    .event-card {
+        background: #fff;
+        border: 2px solid;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        transition: all 0.15s;
+    }
+    .event-card:hover {
+        box-shadow: 0 2px 8px rgba(230,0,18,0.12);
+    }
+    .event-card .event-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .event-flag {
+        font-size: 0.75rem;
+    }
+    .event-card .event-meta {
+        font-size: 0.75rem;
+        color: #888;
+        margin-top: 0.15rem;
+    }
+    .event-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 8px;
+        font-weight: 700;
+        color: #fff;
+        margin-left: 0.3rem;
+    }
 </style>
 {% endblock %}
 
@@ -342,11 +393,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("timeline");
     const projectSelect = document.getElementById("ms-project-select");
     let allProjects = [];
+    let allEvents = [];
 
     try {
-        const resp = await fetch("/api/v1/milestones");
-        if (!resp.ok) throw new Error("API error");
-        allProjects = await resp.json();
+        const [msResp, evResp] = await Promise.all([
+            fetch("/api/v1/milestones"),
+            fetch("/api/v1/events"),
+        ]);
+        if (!msResp.ok) throw new Error("API error");
+        allProjects = await msResp.json();
+        if (evResp.ok) allEvents = await evResp.json();
         renderFiltered();
     } catch (err) {
         container.innerHTML = '<p class="empty-message">データの読み込みに失敗しました</p>';
@@ -359,7 +415,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const filtered = pid
             ? allProjects.filter(p => p.id === parseInt(pid))
             : allProjects;
-        render(filtered);
+        const filteredEvents = pid
+            ? allEvents.filter(e => e.project_id === parseInt(pid) || e.project_id === null)
+            : allEvents;
+        render(filtered, filteredEvents);
     }
 
     function escHtml(str) {
@@ -443,14 +502,54 @@ document.addEventListener("DOMContentLoaded", async () => {
         return html;
     }
 
-    function render(projects) {
-        if (!projects || projects.length === 0) {
+    function renderEventNode(ev) {
+        const color = ev.color || "#e60012";
+        return `<div class="event-node">
+            <div class="event-diamond" style="background:${escHtml(color)};"></div>
+            <div class="event-card" style="border-color:${escHtml(color)};">
+                <div class="event-title" style="color:${escHtml(color)};">
+                    <span class="event-flag">&#9873;</span>
+                    ${escHtml(ev.title)}
+                    <span class="event-badge" style="background:${escHtml(color)};">予定</span>
+                </div>
+                <div class="event-meta">
+                    ${fmtDatetime(ev.event_date)} ${ev.description ? " ・ " + escHtml(ev.description) : ""}
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function render(projects, events) {
+        if ((!projects || projects.length === 0) && (!events || events.length === 0)) {
             container.innerHTML = '<p class="empty-message">プロジェクトがありません</p>';
             return;
         }
 
+        // Collect global events (not tied to a project) to show at appropriate dates
+        const globalEvents = (events || []).filter(e => e.project_id === null);
+        const projectEvents = {};
+        for (const e of (events || [])) {
+            if (e.project_id !== null) {
+                if (!projectEvents[e.project_id]) projectEvents[e.project_id] = [];
+                projectEvents[e.project_id].push(e);
+            }
+        }
+
         let html = "";
         let lastDate = "";
+
+        // Show global events first
+        for (const ev of globalEvents) {
+            const evDate = ev.event_date;
+            if (evDate && evDate !== lastDate) {
+                html += `<div class="date-separator">
+                    <div class="date-dot"></div>
+                    <span class="date-label">${escHtml(evDate)}</span>
+                </div>`;
+                lastDate = evDate;
+            }
+            html += renderEventNode(ev);
+        }
 
         for (const project of projects) {
             // Project date separator
@@ -475,6 +574,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!project.tasks || project.tasks.length === 0) {
                 html += '<p style="color:#aaa; font-size:0.85rem; margin-left:0.5rem;">タスクなし</p>';
                 continue;
+            }
+
+            // Show project-specific events
+            const pEvents = projectEvents[project.id] || [];
+            for (const ev of pEvents) {
+                const evDate = ev.event_date;
+                if (evDate && evDate !== lastDate) {
+                    html += `<div class="date-separator">
+                        <div class="date-dot"></div>
+                        <span class="date-label">${escHtml(evDate)}</span>
+                    </div>`;
+                    lastDate = evDate;
+                }
+                html += renderEventNode(ev);
             }
 
             for (const task of project.tasks) {

@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}予定管理 - Task Management{% endblock %}
+
+{% block head %}
+<style>
+    .ev-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .ev-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #333;
+    }
+    .ev-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+    .ev-filter label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #484848;
+    }
+    .ev-filter select {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        background: #fff;
+        color: #484848;
+        outline: none;
+        min-width: 180px;
+        transition: border-color 0.2s;
+    }
+    .ev-filter select:focus {
+        border-color: #e60012;
+    }
+
+    /* Add form */
+    .ev-form {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .ev-form h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #e60012;
+    }
+    .ev-form-row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        margin-bottom: 0.75rem;
+    }
+    .ev-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .ev-form-group label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #555;
+    }
+    .ev-form-group input,
+    .ev-form-group select,
+    .ev-form-group textarea {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .ev-form-group input:focus,
+    .ev-form-group select:focus,
+    .ev-form-group textarea:focus {
+        border-color: #e60012;
+    }
+    .ev-form-group input[type="color"] {
+        width: 40px;
+        height: 34px;
+        padding: 2px;
+        cursor: pointer;
+    }
+    .ev-form-group textarea {
+        min-width: 200px;
+        min-height: 34px;
+        resize: vertical;
+    }
+    .ev-btn {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .ev-btn-primary {
+        background: #e60012;
+        color: #fff;
+    }
+    .ev-btn-primary:hover {
+        background: #c4000f;
+    }
+    .ev-btn-danger {
+        background: #fff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+    }
+    .ev-btn-danger:hover {
+        background: #e60012;
+        color: #fff;
+    }
+    .ev-btn-edit {
+        background: #fff;
+        color: #0068b7;
+        border: 2px solid #0068b7;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+    }
+    .ev-btn-edit:hover {
+        background: #0068b7;
+        color: #fff;
+    }
+
+    /* Table */
+    .ev-table-wrap {
+        overflow-x: auto;
+    }
+    .ev-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .ev-table th {
+        background: #484848;
+        color: #fff;
+        padding: 0.6rem 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    .ev-table td {
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+    }
+    .ev-table tr:hover td {
+        background: #fafafa;
+    }
+    .ev-color-dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid #ccc;
+        vertical-align: middle;
+    }
+    .ev-project-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        background: #f0f0f0;
+        color: #555;
+    }
+    .ev-project-badge.global {
+        background: #fff5f5;
+        color: #e60012;
+        border: 1px solid #fcc;
+    }
+    .ev-actions {
+        display: flex;
+        gap: 0.4rem;
+    }
+    .ev-empty {
+        text-align: center;
+        color: #aaa;
+        padding: 2rem;
+        font-size: 0.95rem;
+    }
+    /* Inline edit row */
+    .ev-edit-input {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.85rem;
+        border: 2px solid #0068b7;
+        border-radius: 4px;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .ev-btn-save {
+        background: #0ab44a;
+        color: #fff;
+        border: none;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .ev-btn-save:hover {
+        background: #078a39;
+    }
+    .ev-btn-cancel {
+        background: #fff;
+        color: #999;
+        border: 2px solid #ccc;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .ev-btn-cancel:hover {
+        border-color: #999;
+        color: #555;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ev-header">
+    <span class="ev-title">予定管理</span>
+    <div class="ev-filter">
+        <label for="ev-filter-select">プロジェクト:</label>
+        <select id="ev-filter-select">
+            <option value="">すべて</option>
+            {% for project in projects %}
+            <option value="{{ project.id }}">{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="ev-form" id="ev-add-form">
+    <h3>予定を追加</h3>
+    <div class="ev-form-row">
+        <div class="ev-form-group">
+            <label for="ev-title">タイトル *</label>
+            <input type="text" id="ev-title" placeholder="予定名" required style="min-width:200px;">
+        </div>
+        <div class="ev-form-group">
+            <label for="ev-date">日付 *</label>
+            <input type="date" id="ev-date" required>
+        </div>
+        <div class="ev-form-group">
+            <label for="ev-project">プロジェクト</label>
+            <select id="ev-project">
+                <option value="">全体（グローバル）</option>
+                {% for project in projects %}
+                <option value="{{ project.id }}">{{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="ev-form-group">
+            <label for="ev-color">色</label>
+            <input type="color" id="ev-color" value="#e60012">
+        </div>
+    </div>
+    <div class="ev-form-row">
+        <div class="ev-form-group" style="flex:1;">
+            <label for="ev-desc">説明</label>
+            <textarea id="ev-desc" placeholder="説明（任意）" rows="1"></textarea>
+        </div>
+        <button class="ev-btn ev-btn-primary" id="ev-add-btn">追加</button>
+    </div>
+</div>
+
+<div class="ev-table-wrap">
+    <table class="ev-table" id="ev-table">
+        <thead>
+            <tr>
+                <th>色</th>
+                <th>日付</th>
+                <th>タイトル</th>
+                <th>プロジェクト</th>
+                <th>説明</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="ev-tbody">
+        </tbody>
+    </table>
+    <p class="ev-empty" id="ev-empty" style="display:none;">予定がありません</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const tbody = document.getElementById("ev-tbody");
+    const emptyMsg = document.getElementById("ev-empty");
+    const filterSelect = document.getElementById("ev-filter-select");
+    const addBtn = document.getElementById("ev-add-btn");
+
+    let allEvents = {{ events | tojson }};
+    const projects = {{ projects | map(attribute='id') | list | tojson }};
+    const projectNames = {};
+    {% for project in projects %}
+    projectNames[{{ project.id }}] = "{{ project.name }}";
+    {% endfor %}
+
+    function escHtml(str) {
+        if (!str) return "";
+        const d = document.createElement("div");
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    function renderTable() {
+        const filter = filterSelect.value;
+        let filtered = allEvents;
+        if (filter) {
+            const pid = parseInt(filter);
+            filtered = allEvents.filter(e => e.project_id === pid || e.project_id === null);
+        }
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = "";
+            emptyMsg.style.display = "block";
+            return;
+        }
+        emptyMsg.style.display = "none";
+
+        tbody.innerHTML = filtered.map(ev => {
+            const projBadge = ev.project_id
+                ? `<span class="ev-project-badge">${escHtml(ev.project_name)}</span>`
+                : `<span class="ev-project-badge global">全体</span>`;
+            return `<tr data-id="${ev.id}">
+                <td><span class="ev-color-dot" style="background:${escHtml(ev.color)}"></span></td>
+                <td>${escHtml(ev.event_date)}</td>
+                <td>${escHtml(ev.title)}</td>
+                <td>${projBadge}</td>
+                <td>${escHtml(ev.description || "")}</td>
+                <td class="ev-actions">
+                    <button class="ev-btn ev-btn-edit" onclick="startEdit(${ev.id})">編集</button>
+                    <button class="ev-btn ev-btn-danger" onclick="deleteEvent(${ev.id})">削除</button>
+                </td>
+            </tr>`;
+        }).join("");
+    }
+
+    renderTable();
+    filterSelect.addEventListener("change", renderTable);
+
+    // Add event
+    addBtn.addEventListener("click", async () => {
+        const title = document.getElementById("ev-title").value.trim();
+        const eventDate = document.getElementById("ev-date").value;
+        const projectId = document.getElementById("ev-project").value || null;
+        const color = document.getElementById("ev-color").value;
+        const description = document.getElementById("ev-desc").value.trim() || null;
+
+        if (!title || !eventDate) {
+            alert("タイトルと日付は必須です");
+            return;
+        }
+
+        const body = { title, event_date: eventDate, color, description };
+        if (projectId) body.project_id = parseInt(projectId);
+
+        try {
+            const resp = await fetch("/api/v1/events", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            if (!resp.ok) { alert("作成に失敗しました"); return; }
+            const created = await resp.json();
+            created.project_name = created.project_id ? (projectNames[created.project_id] || "不明") : "全体";
+            allEvents.push(created);
+            allEvents.sort((a, b) => a.event_date.localeCompare(b.event_date));
+            renderTable();
+
+            // Clear form
+            document.getElementById("ev-title").value = "";
+            document.getElementById("ev-date").value = "";
+            document.getElementById("ev-project").value = "";
+            document.getElementById("ev-color").value = "#e60012";
+            document.getElementById("ev-desc").value = "";
+        } catch (err) { alert("通信エラー"); }
+    });
+
+    // Delete event
+    window.deleteEvent = async function(id) {
+        if (!confirm("この予定を削除しますか？")) return;
+        try {
+            const resp = await fetch(`/api/v1/events/${id}`, { method: "DELETE" });
+            if (!resp.ok) { alert("削除に失敗しました"); return; }
+            allEvents = allEvents.filter(e => e.id !== id);
+            renderTable();
+        } catch (err) { alert("通信エラー"); }
+    };
+
+    // Edit event inline
+    window.startEdit = function(id) {
+        const ev = allEvents.find(e => e.id === id);
+        if (!ev) return;
+        const row = tbody.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+
+        const projectOptions = `<option value="">全体</option>` +
+            Object.entries(projectNames).map(([pid, name]) =>
+                `<option value="${pid}" ${ev.project_id == pid ? "selected" : ""}>${escHtml(name)}</option>`
+            ).join("");
+
+        row.innerHTML = `
+            <td><input type="color" class="ev-edit-color" value="${ev.color || '#e60012'}" style="width:32px;height:28px;"></td>
+            <td><input type="date" class="ev-edit-input ev-edit-date" value="${ev.event_date}"></td>
+            <td><input type="text" class="ev-edit-input ev-edit-title" value="${escHtml(ev.title)}"></td>
+            <td><select class="ev-edit-input ev-edit-project">${projectOptions}</select></td>
+            <td><input type="text" class="ev-edit-input ev-edit-desc" value="${escHtml(ev.description || '')}"></td>
+            <td class="ev-actions">
+                <button class="ev-btn ev-btn-save" onclick="saveEdit(${id})">保存</button>
+                <button class="ev-btn ev-btn-cancel" onclick="cancelEdit()">取消</button>
+            </td>
+        `;
+    };
+
+    window.saveEdit = async function(id) {
+        const row = tbody.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+
+        const title = row.querySelector(".ev-edit-title").value.trim();
+        const eventDate = row.querySelector(".ev-edit-date").value;
+        const projectId = row.querySelector(".ev-edit-project").value || null;
+        const color = row.querySelector(".ev-edit-color").value;
+        const description = row.querySelector(".ev-edit-desc").value.trim() || null;
+
+        if (!title || !eventDate) { alert("タイトルと日付は必須です"); return; }
+
+        const body = { title, event_date: eventDate, color, description };
+        if (projectId) body.project_id = parseInt(projectId);
+        else body.project_id = null;
+
+        try {
+            const resp = await fetch(`/api/v1/events/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            if (!resp.ok) { alert("更新に失敗しました"); return; }
+            const updated = await resp.json();
+            updated.project_name = updated.project_id ? (projectNames[updated.project_id] || "不明") : "全体";
+            const idx = allEvents.findIndex(e => e.id === id);
+            if (idx >= 0) allEvents[idx] = updated;
+            allEvents.sort((a, b) => a.event_date.localeCompare(b.event_date));
+            renderTable();
+        } catch (err) { alert("通信エラー"); }
+    };
+
+    window.cancelEdit = function() {
+        renderTable();
+    };
+});
+</script>
+{% endblock %}

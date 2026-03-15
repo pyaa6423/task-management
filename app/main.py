@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.exceptions import AppError
-from app.routers import projects, tasks, reports, gantt, check_items, milestones, task_pages
+from app.routers import projects, tasks, reports, gantt, check_items, milestones, task_pages, events
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.include_router(gantt.router)
 app.include_router(check_items.router)
 app.include_router(milestones.router)
 app.include_router(task_pages.router)
+app.include_router(events.router)
 
 
 @app.exception_handler(AppError)

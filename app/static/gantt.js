@@ -66,6 +66,122 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
+    // ── Event overlay lines ──
+    async function addEventOverlays(ganttEl, projectId) {
+        const svg = ganttEl.querySelector("svg.gantt");
+        if (!svg || !ganttChart) return;
+
+        const gridRows = svg.querySelectorAll(".grid .grid-row");
+        const lowerTexts = svg.querySelectorAll(".lower-text");
+        if (gridRows.length === 0 || lowerTexts.length < 2) return;
+
+        const textEls = Array.from(lowerTexts);
+        const colWidth = parseFloat(textEls[1].getAttribute("x")) - parseFloat(textEls[0].getAttribute("x"));
+        const ganttStart = ganttChart.gantt_start;
+        if (!ganttStart) return;
+
+        const gridTop = parseFloat(gridRows[0].getAttribute("y"));
+        const lastRow = gridRows[gridRows.length - 1];
+        const gridBottom = parseFloat(lastRow.getAttribute("y")) + parseFloat(lastRow.getAttribute("height"));
+        const offsetX = parseFloat(textEls[0].getAttribute("x")) - colWidth / 2;
+
+        const startDate = new Date(ganttStart);
+        const ns = "http://www.w3.org/2000/svg";
+
+        let url = "/api/v1/events";
+        if (projectId) url += `?project_id=${projectId}`;
+
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) return;
+            const events = await resp.json();
+
+            const eventGroup = document.createElementNS(ns, "g");
+            eventGroup.setAttribute("class", "event-overlays");
+
+            // Track label positions to avoid overlap
+            const labelSlots = []; // [{x, slot}]
+
+            for (const ev of events) {
+                const evDate = new Date(ev.event_date + "T00:00:00");
+                const diffDays = Math.round((evDate - startDate) / (1000 * 60 * 60 * 24));
+                const x = offsetX + diffDays * colWidth + colWidth / 2;
+
+                const svgWidth = parseFloat(svg.getAttribute("width")) || 2000;
+                if (x < 0 || x > svgWidth) continue;
+
+                const color = ev.color || "#e60012";
+
+                // Vertical line
+                const line = document.createElementNS(ns, "line");
+                line.setAttribute("x1", x);
+                line.setAttribute("y1", gridTop);
+                line.setAttribute("x2", x);
+                line.setAttribute("y2", gridBottom);
+                line.setAttribute("stroke", color);
+                line.setAttribute("stroke-width", "2");
+                line.setAttribute("stroke-dasharray", "6,3");
+                line.setAttribute("opacity", "0.8");
+                line.setAttribute("class", "event-line");
+                eventGroup.appendChild(line);
+
+                // Small diamond at top of line
+                const diamond = document.createElementNS(ns, "polygon");
+                const dx = x, dy = gridTop + 6;
+                diamond.setAttribute("points", `${dx},${dy-5} ${dx+4},${dy} ${dx},${dy+5} ${dx-4},${dy}`);
+                diamond.setAttribute("fill", color);
+                diamond.setAttribute("class", "event-diamond");
+                eventGroup.appendChild(diamond);
+
+                // Label below grid — stagger if overlapping
+                let slot = 0;
+                for (const prev of labelSlots) {
+                    if (Math.abs(prev.x - x) < colWidth * 4) {
+                        slot = Math.max(slot, prev.slot + 1);
+                    }
+                }
+                labelSlots.push({ x, slot });
+
+                const labelY = gridBottom + 14 + slot * 13;
+                const label = document.createElementNS(ns, "text");
+                label.setAttribute("x", x + 2);
+                label.setAttribute("y", labelY);
+                label.setAttribute("text-anchor", "start");
+                label.setAttribute("fill", color);
+                label.setAttribute("font-size", "10");
+                label.setAttribute("font-weight", "700");
+                label.setAttribute("class", "event-label");
+                label.textContent = ev.title.length > 12 ? ev.title.substring(0, 12) + "…" : ev.title;
+                eventGroup.appendChild(label);
+
+                // Small tick connecting line bottom to label
+                const tick = document.createElementNS(ns, "line");
+                tick.setAttribute("x1", x);
+                tick.setAttribute("y1", gridBottom);
+                tick.setAttribute("x2", x);
+                tick.setAttribute("y2", labelY - 10);
+                tick.setAttribute("stroke", color);
+                tick.setAttribute("stroke-width", "1");
+                tick.setAttribute("opacity", "0.4");
+                eventGroup.appendChild(tick);
+            }
+
+            // Expand SVG height if labels extend beyond
+            if (labelSlots.length > 0) {
+                const maxSlot = Math.max(...labelSlots.map(s => s.slot));
+                const neededHeight = gridBottom + 20 + (maxSlot + 1) * 13;
+                const currentHeight = parseFloat(svg.getAttribute("height")) || 0;
+                if (neededHeight > currentHeight) {
+                    svg.setAttribute("height", neededHeight);
+                }
+            }
+
+            svg.appendChild(eventGroup);
+        } catch (err) {
+            // silently ignore fetch errors
+        }
+    }
+
     // ── Overlays (all modes: day-of-week + weekends + month lines) ──
     function addOverlays(ganttEl) {
         const svg = ganttEl.querySelector("svg.gantt");
@@ -170,6 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const svg = gd.querySelector("svg.gantt");
                         if (svg) delete svg.dataset.overlayApplied;
                         addOverlays(gd);
+                        addEventOverlays(gd, currentProjectId);
                     }
                 }, 100);
             }
@@ -358,6 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             buildOverviewLabels(ganttDiv, labelsDiv, allBars, projects);
             addOverlays(ganttDiv);
+            addEventOverlays(ganttDiv, null);
         }, 60);
 
         // Click on bar → navigate to that project
@@ -620,7 +738,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        setTimeout(() => addOverlays(ganttDiv), 50);
+        setTimeout(() => {
+            addOverlays(ganttDiv);
+            addEventOverlays(ganttDiv, currentProjectId);
+        }, 50);
 
         // Add task button
         if (currentProjectId) {

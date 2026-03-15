@@ -37,6 +37,29 @@ header a:hover {
     color: #e60012;
 }
 
+.header-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1.5rem;
+}
+
+.header-nav-link {
+    color: #e60012 !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+}
+
+.header-nav-link:hover {
+    background: #e60012;
+    color: #fff !important;
+    border-color: #e60012;
+}
+
 /* ── Main ── */
 main {
     padding: 2rem;
