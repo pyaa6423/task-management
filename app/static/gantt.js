@@ -805,6 +805,14 @@ document.addEventListener("DOMContentLoaded", () => {
             card.appendChild(check);
             card.appendChild(info);
 
+            // Check items link
+            const checksLink = document.createElement("a");
+            checksLink.className = "expand-card-checks-link";
+            checksLink.href = `/tasks/${child.id.replace("task-", "")}/checks`;
+            checksLink.textContent = "達成項目";
+            checksLink.title = "達成項目を表示";
+            checksLink.addEventListener("click", (e) => e.stopPropagation());
+            card.appendChild(checksLink);
 
             cards.appendChild(card);
         });
@@ -857,20 +865,34 @@ document.addEventListener("DOMContentLoaded", () => {
         dot.className = "leaf-card-dot";
         dot.style.background = color.bar;
 
-        const name = document.createElement("span");
-        name.className = "leaf-card-name";
+        const info = document.createElement("div");
+        info.className = "expand-card-info";
+
+        const name = document.createElement("div");
+        name.className = "expand-card-name";
         name.textContent = taskData.name;
 
-        const meta = document.createElement("span");
-        meta.className = "leaf-card-meta";
+        const meta = document.createElement("div");
+        meta.className = "expand-card-meta";
         const dateStr = `${fmtShortDate(taskData.start)} → ${fmtShortDate(taskData.end)}`;
         const memberStr = taskData.assigned_member ? ` ・ ${taskData.assigned_member}` : "";
         meta.textContent = dateStr + memberStr;
 
+        info.appendChild(name);
+        info.appendChild(meta);
+
+        // Check items link
+        const checksLink = document.createElement("a");
+        checksLink.className = "leaf-card-checks-link";
+        checksLink.href = `/tasks/${taskData.id.replace("task-", "")}/checks`;
+        checksLink.textContent = "達成項目";
+        checksLink.title = "達成項目を表示";
+        checksLink.addEventListener("click", (e) => e.stopPropagation());
+
         card.appendChild(check);
         card.appendChild(dot);
-        card.appendChild(name);
-        card.appendChild(meta);
+        card.appendChild(info);
+        card.appendChild(checksLink);
         panel.appendChild(card);
         parentEl.appendChild(panel);
     }

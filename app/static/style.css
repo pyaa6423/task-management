@@ -737,3 +737,24 @@ div.details-container,
 .expand-panel::-webkit-scrollbar-thumb:hover {
     background: #e60012;
 }
+
+/* ── Check items link on task cards ── */
+.expand-card-checks-link,
+.leaf-card-checks-link {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #e60012;
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    border: 1.5px solid #e60012;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.expand-card-checks-link:hover,
+.leaf-card-checks-link:hover {
+    background: #e60012;
+    color: #fff;
+}

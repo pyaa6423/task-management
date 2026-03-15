@@ -30,3 +30,6 @@ class Task(Base):
     children: Mapped[list["Task"]] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
     )
+    check_items: Mapped[list["CheckItem"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
