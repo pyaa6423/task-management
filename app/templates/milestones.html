@@ -525,7 +525,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // Collect global events (not tied to a project) to show at appropriate dates
+        // Collect global events and project-specific events
         const globalEvents = (events || []).filter(e => e.project_id === null);
         const projectEvents = {};
         for (const e of (events || [])) {
@@ -536,25 +536,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         let html = "";
-        let lastDate = "";
-
-        // Show global events first
-        for (const ev of globalEvents) {
-            const evDate = ev.event_date;
-            if (evDate && evDate !== lastDate) {
-                html += `<div class="date-separator">
-                    <div class="date-dot"></div>
-                    <span class="date-label">${escHtml(evDate)}</span>
-                </div>`;
-                lastDate = evDate;
-            }
-            html += renderEventNode(ev);
-        }
 
         for (const project of projects) {
+            let lastDate = "";
+
             // Project date separator
             const projDate = project.start_date || "";
-            if (projDate && projDate !== lastDate) {
+            if (projDate) {
                 html += `<div class="date-separator">
                     <div class="date-dot"></div>
                     <span class="date-label">${escHtml(projDate)}</span>
@@ -571,36 +559,47 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <a href="/projects/${project.id}/tasks/new" class="ms-checks-link" style="margin-left:auto;">＋ タスク追加</a>
             </div>`;
 
-            if (!project.tasks || project.tasks.length === 0) {
+            // Merge project events + global events + tasks, sorted by date
+            const pEvents = (projectEvents[project.id] || []).concat(globalEvents);
+            const allItems = [];
+
+            for (const ev of pEvents) {
+                allItems.push({ type: "event", date: ev.event_date || "", data: ev });
+            }
+            for (const task of (project.tasks || [])) {
+                const d = task.start_time ? task.start_time.split("T")[0] : "";
+                allItems.push({ type: "task", date: d, data: task });
+            }
+            allItems.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+
+            if (allItems.length === 0) {
                 html += '<p style="color:#aaa; font-size:0.85rem; margin-left:0.5rem;">タスクなし</p>';
                 continue;
             }
 
-            // Show project-specific events
-            const pEvents = projectEvents[project.id] || [];
-            for (const ev of pEvents) {
-                const evDate = ev.event_date;
-                if (evDate && evDate !== lastDate) {
-                    html += `<div class="date-separator">
-                        <div class="date-dot"></div>
-                        <span class="date-label">${escHtml(evDate)}</span>
-                    </div>`;
-                    lastDate = evDate;
-                }
-                html += renderEventNode(ev);
-            }
-
-            for (const task of project.tasks) {
-                // Date separator for task
-                const taskDate = dateKey(task.start_time);
-                if (taskDate && taskDate !== lastDate) {
-                    html += `<div class="date-separator">
-                        <div class="date-dot"></div>
-                        <span class="date-label">${escHtml(taskDate)}</span>
+            for (const item of allItems) {
+                if (item.type === "event") {
+                    const evDate = item.data.event_date;
+                    if (evDate && evDate !== lastDate) {
+                        html += `<div class="date-separator">
+                            <div class="date-dot"></div>
+                            <span class="date-label">${escHtml(evDate)}</span>
+                        </div>`;
+                        lastDate = evDate;
+                    }
+                    html += renderEventNode(item.data);
+                } else {
+                    const task = item.data;
+                    const taskDate = dateKey(task.start_time);
+                    if (taskDate && taskDate !== lastDate) {
+                        html += `<div class="date-separator">
+                            <div class="date-dot"></div>
+                            <span class="date-label">${escHtml(taskDate)}</span>
                     </div>`;
                     lastDate = taskDate;
                 }
                 html += renderTask(task, false);
+                }
             }
         }
 
