@@ -2,7 +2,6 @@ import pytest
 from datetime import datetime, timezone
 from app.models.project import Project
 from app.models.task import Task
-from app.models.subtask import SubTask
 from app.services import report_service
 
 
@@ -32,26 +31,28 @@ async def test_get_completed_items_tasks(db):
     assert items[0].item_type == "task"
     assert items[0].title == "Done Task"
     assert items[0].project_name == "Report Project"
+    assert items[0].parent_task_title is None
 
 
-async def test_get_completed_items_subtasks(db):
+async def test_get_completed_items_child_tasks(db):
     project = Project(name="P")
     db.add(project)
     await db.commit()
     await db.refresh(project)
 
-    task = Task(project_id=project.id, title="Parent Task")
-    db.add(task)
+    parent = Task(project_id=project.id, title="Parent Task")
+    db.add(parent)
     await db.commit()
-    await db.refresh(task)
+    await db.refresh(parent)
 
-    subtask = SubTask(
-        task_id=task.id,
-        title="Done Sub",
+    child = Task(
+        project_id=project.id,
+        parent_id=parent.id,
+        title="Done Child",
         is_completed=True,
         completed_at=datetime(2026, 3, 15, 12, 0, tzinfo=timezone.utc),
     )
-    db.add(subtask)
+    db.add(child)
     await db.commit()
 
     items = await report_service.get_completed_items(
@@ -61,8 +62,8 @@ async def test_get_completed_items_subtasks(db):
     )
 
     assert len(items) == 1
-    assert items[0].item_type == "subtask"
-    assert items[0].task_title == "Parent Task"
+    assert items[0].item_type == "task"
+    assert items[0].parent_task_title == "Parent Task"
 
 
 async def test_get_completed_items_member_filter(db):

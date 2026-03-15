@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.exceptions import AppError
-from app.routers import projects, tasks, subtasks, reports, gantt
+from app.routers import projects, tasks, reports, gantt
 
 
 @asynccontextmanager
@@ -30,7 +30,6 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(projects.router)
 app.include_router(tasks.router)
-app.include_router(subtasks.router)
 app.include_router(reports.router)
 app.include_router(gantt.router)
 

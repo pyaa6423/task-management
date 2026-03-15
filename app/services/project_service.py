@@ -11,7 +11,7 @@ from app.exceptions import NotFoundError, ConflictError
 async def get_projects(db: AsyncSession, offset: int = 0, limit: int = 20) -> list[Project]:
     stmt = (
         select(Project)
-        .options(selectinload(Project.tasks).selectinload(Task.subtasks))
+        .options(selectinload(Project.tasks).selectinload(Task.children))
         .order_by(Project.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -22,7 +22,7 @@ async def get_projects(db: AsyncSession, offset: int = 0, limit: int = 20) -> li
 async def get_project(db: AsyncSession, project_id: int) -> Project:
     stmt = (
         select(Project)
-        .options(selectinload(Project.tasks).selectinload(Task.subtasks))
+        .options(selectinload(Project.tasks).selectinload(Task.children))
         .where(Project.id == project_id)
     )
     project = await db.scalar(stmt)

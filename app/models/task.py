@@ -9,6 +9,9 @@ class Task(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), default=None
+    )
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(default=None)
     start_time: Mapped[datetime | None] = mapped_column(default=None)
@@ -21,6 +24,9 @@ class Task(Base):
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="tasks")
-    subtasks: Mapped[list["SubTask"]] = relationship(
-        back_populates="task", cascade="all, delete-orphan"
+    parent: Mapped["Task | None"] = relationship(
+        back_populates="children", remote_side=[id]
+    )
+    children: Mapped[list["Task"]] = relationship(
+        back_populates="parent", cascade="all, delete-orphan"
     )

@@ -6,7 +6,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from app.database import get_db
 from app.models.task import Task
-from app.models.subtask import SubTask
 from app.models.project import Project
 
 router = APIRouter(tags=["gantt"])
@@ -26,17 +25,17 @@ async def gantt_project_tasks(
 ):
     stmt = (
         select(Task)
-        .options(selectinload(Task.subtasks))
-        .where(Task.project_id == project_id)
+        .options(selectinload(Task.children))
+        .where(Task.project_id == project_id, Task.parent_id.is_(None))
         .order_by(Task.priority.asc())
     )
     tasks = (await db.scalars(stmt)).all()
 
     result = []
     for task in tasks:
-        completed_subtasks = sum(1 for s in task.subtasks if s.is_completed)
-        total_subtasks = len(task.subtasks)
-        progress = (completed_subtasks / total_subtasks * 100) if total_subtasks > 0 else 0
+        completed_children = sum(1 for c in task.children if c.is_completed)
+        total_children = len(task.children)
+        progress = (completed_children / total_children * 100) if total_children > 0 else 0
 
         result.append({
             "id": f"task-{task.id}",
@@ -46,33 +45,34 @@ async def gantt_project_tasks(
             "progress": progress,
             "priority": task.priority,
             "is_completed": task.is_completed,
-            "has_children": total_subtasks > 0,
+            "has_children": total_children > 0,
         })
     return result
 
 
-@router.get("/api/v1/gantt/tasks/{task_id}/subtasks")
-async def gantt_task_subtasks(
+@router.get("/api/v1/gantt/tasks/{task_id}/children")
+async def gantt_task_children(
     task_id: int,
     db: AsyncSession = Depends(get_db),
 ):
     stmt = (
-        select(SubTask)
-        .where(SubTask.task_id == task_id)
-        .order_by(SubTask.priority.asc())
+        select(Task)
+        .options(selectinload(Task.children))
+        .where(Task.parent_id == task_id)
+        .order_by(Task.priority.asc())
     )
-    subtasks = (await db.scalars(stmt)).all()
+    children = (await db.scalars(stmt)).all()
 
     return [
         {
-            "id": f"subtask-{s.id}",
-            "name": s.title,
-            "start": s.start_time.isoformat() if s.start_time else None,
-            "end": s.end_time.isoformat() if s.end_time else None,
-            "progress": 100 if s.is_completed else 0,
-            "priority": s.priority,
-            "is_completed": s.is_completed,
-            "has_children": False,
+            "id": f"task-{c.id}",
+            "name": c.title,
+            "start": c.start_time.isoformat() if c.start_time else None,
+            "end": c.end_time.isoformat() if c.end_time else None,
+            "progress": 100 if c.is_completed else 0,
+            "priority": c.priority,
+            "is_completed": c.is_completed,
+            "has_children": len(c.children) > 0,
         }
-        for s in subtasks
+        for c in children
     ]

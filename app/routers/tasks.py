@@ -47,3 +47,21 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
 ):
     await task_service.delete_task(db, task_id)
+
+
+@router.get("/api/v1/tasks/{task_id}/children", response_model=list[TaskResponse])
+async def list_children(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await task_service.get_children(db, task_id)
+
+
+@router.post("/api/v1/tasks/{task_id}/children", response_model=TaskResponse, status_code=201)
+async def create_child(
+    task_id: int,
+    data: TaskCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    parent = await task_service.get_task(db, task_id)
+    return await task_service.create_task(db, parent.project_id, data, parent_id=task_id)

@@ -8,6 +8,11 @@ from app.schemas.task import TaskCreate, TaskUpdate
 from app.exceptions import NotFoundError, ConflictError
 
 
+def _children_load():
+    """Recursive eager loading for children (2 levels deep)."""
+    return selectinload(Task.children).selectinload(Task.children)
+
+
 async def get_tasks_by_project(db: AsyncSession, project_id: int) -> list[Task]:
     # Verify project exists
     project = await db.get(Project, project_id)
@@ -16,8 +21,8 @@ async def get_tasks_by_project(db: AsyncSession, project_id: int) -> list[Task]:
 
     stmt = (
         select(Task)
-        .options(selectinload(Task.subtasks))
-        .where(Task.project_id == project_id)
+        .options(_children_load())
+        .where(Task.project_id == project_id, Task.parent_id.is_(None))
         .order_by(Task.priority.asc())
     )
     return list((await db.scalars(stmt)).all())
@@ -26,7 +31,7 @@ async def get_tasks_by_project(db: AsyncSession, project_id: int) -> list[Task]:
 async def get_task(db: AsyncSession, task_id: int) -> Task:
     stmt = (
         select(Task)
-        .options(selectinload(Task.subtasks))
+        .options(_children_load())
         .where(Task.id == task_id)
     )
     task = await db.scalar(stmt)
@@ -35,12 +40,17 @@ async def get_task(db: AsyncSession, task_id: int) -> Task:
     return task
 
 
-async def create_task(db: AsyncSession, project_id: int, data: TaskCreate) -> Task:
+async def create_task(db: AsyncSession, project_id: int, data: TaskCreate, parent_id: int | None = None) -> Task:
     project = await db.get(Project, project_id)
     if not project:
         raise NotFoundError("Project", project_id)
 
-    task = Task(project_id=project_id, **data.model_dump())
+    if parent_id is not None:
+        parent = await db.get(Task, parent_id)
+        if not parent:
+            raise NotFoundError("Task", parent_id)
+
+    task = Task(project_id=project_id, parent_id=parent_id, **data.model_dump())
     db.add(task)
     await db.commit()
     await db.refresh(task)
@@ -48,15 +58,16 @@ async def create_task(db: AsyncSession, project_id: int, data: TaskCreate) -> Ta
 
 
 async def update_task(db: AsyncSession, task_id: int, data: TaskUpdate) -> Task:
+    db.expire_all()
     task = await get_task(db, task_id)
     update_data = data.model_dump(exclude_unset=True)
 
     if update_data.get("is_completed") is True and not task.is_completed:
-        # Check for incomplete subtasks
-        for subtask in task.subtasks:
-            if not subtask.is_completed:
+        # Check for incomplete children
+        for child in task.children:
+            if not child.is_completed:
                 raise ConflictError(
-                    f"Cannot complete task: subtask '{subtask.title}' is not completed"
+                    f"Cannot complete task: child task '{child.title}' is not completed"
                 )
         update_data["completed_at"] = datetime.now(timezone.utc)
     elif update_data.get("is_completed") is False:
@@ -73,3 +84,18 @@ async def delete_task(db: AsyncSession, task_id: int) -> None:
     task = await get_task(db, task_id)
     await db.delete(task)
     await db.commit()
+
+
+async def get_children(db: AsyncSession, task_id: int) -> list[Task]:
+    # Verify parent task exists
+    parent = await db.get(Task, task_id)
+    if not parent:
+        raise NotFoundError("Task", task_id)
+
+    stmt = (
+        select(Task)
+        .options(_children_load())
+        .where(Task.parent_id == task_id)
+        .order_by(Task.priority.asc())
+    )
+    return list((await db.scalars(stmt)).all())

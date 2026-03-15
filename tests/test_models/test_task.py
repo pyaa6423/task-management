@@ -4,7 +4,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.models.project import Project
 from app.models.task import Task
-from app.models.subtask import SubTask
 
 
 async def test_create_task(db):
@@ -22,27 +21,47 @@ async def test_create_task(db):
     assert task.title == "Task 1"
     assert task.priority == 1
     assert task.is_completed is False
+    assert task.parent_id is None
 
 
-async def test_task_has_subtasks_relationship(db):
+async def test_task_has_children_relationship(db):
     project = Project(name="P2")
     db.add(project)
     await db.commit()
     await db.refresh(project)
 
-    task = Task(project_id=project.id, title="Task with subtasks")
+    task = Task(project_id=project.id, title="Parent task")
     db.add(task)
     await db.commit()
     await db.refresh(task)
 
-    subtask = SubTask(task_id=task.id, title="SubTask 1")
-    db.add(subtask)
+    child = Task(project_id=project.id, title="Child 1", parent_id=task.id)
+    db.add(child)
     await db.commit()
 
-    stmt = select(Task).options(selectinload(Task.subtasks)).where(Task.id == task.id)
+    stmt = select(Task).options(selectinload(Task.children)).where(Task.id == task.id)
     task = await db.scalar(stmt)
-    assert len(task.subtasks) == 1
-    assert task.subtasks[0].title == "SubTask 1"
+    assert len(task.children) == 1
+    assert task.children[0].title == "Child 1"
+
+
+async def test_child_has_parent_relationship(db):
+    project = Project(name="P2b")
+    db.add(project)
+    await db.commit()
+    await db.refresh(project)
+
+    parent = Task(project_id=project.id, title="Parent")
+    db.add(parent)
+    await db.commit()
+    await db.refresh(parent)
+
+    child = Task(project_id=project.id, title="Child", parent_id=parent.id)
+    db.add(child)
+    await db.commit()
+    await db.refresh(child)
+
+    assert child.parent_id == parent.id
 
 
 async def test_task_priority_ordering(db):
@@ -97,3 +116,26 @@ async def test_task_completion(db):
 
     assert task.is_completed is True
     assert task.completed_at is not None
+
+
+async def test_child_task_priority_ordering(db):
+    project = Project(name="P6")
+    db.add(project)
+    await db.commit()
+    await db.refresh(project)
+
+    parent = Task(project_id=project.id, title="Parent")
+    db.add(parent)
+    await db.commit()
+    await db.refresh(parent)
+
+    c1 = Task(project_id=project.id, title="Low", priority=3, parent_id=parent.id)
+    c2 = Task(project_id=project.id, title="High", priority=1, parent_id=parent.id)
+    db.add_all([c1, c2])
+    await db.commit()
+
+    children = (await db.scalars(
+        select(Task).where(Task.parent_id == parent.id).order_by(Task.priority.asc())
+    )).all()
+    assert children[0].title == "High"
+    assert children[1].title == "Low"

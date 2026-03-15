@@ -383,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Load & render subtasks ──
     async function loadSubtasks(taskId, taskName) {
-        const res = await fetch(`/api/v1/gantt/tasks/${taskId}/subtasks`);
+        const res = await fetch(`/api/v1/gantt/tasks/${taskId}/children`);
         const subtasks = await res.json();
 
         if (subtasks.length === 0) return;

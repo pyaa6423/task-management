@@ -3,10 +3,10 @@ from datetime import datetime
 
 
 class CompletedItemResponse(BaseModel):
-    item_type: str  # "task" | "subtask"
+    item_type: str  # "task"
     title: str
     project_name: str
-    task_title: str | None = None
+    parent_task_title: str | None = None
     assigned_member: str | None = None
     completed_at: datetime
 

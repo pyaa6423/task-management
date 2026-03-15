@@ -1,6 +1,6 @@
+from __future__ import annotations
 from pydantic import BaseModel
 from datetime import datetime
-from app.schemas.subtask import SubTaskResponse
 
 
 class TaskCreate(BaseModel):
@@ -25,6 +25,7 @@ class TaskUpdate(BaseModel):
 class TaskResponse(BaseModel):
     id: int
     project_id: int
+    parent_id: int | None = None
     title: str
     description: str | None
     start_time: datetime | None
@@ -35,6 +36,6 @@ class TaskResponse(BaseModel):
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    subtasks: list[SubTaskResponse] = []
+    children: list[TaskResponse] = []
 
     model_config = {"from_attributes": True}
