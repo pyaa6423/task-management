@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}Milestone Timeline - Task Management{% endblock %}
+
+{% block head %}
+<style>
+    .ms-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.4rem 0.875rem;
+        background: #ffffff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-link:hover {
+        background: #e60012;
+        color: #ffffff;
+    }
+    .ms-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #333;
+    }
+    .ms-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+    .ms-filter label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #484848;
+    }
+    .ms-filter select {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        background: #fff;
+        color: #484848;
+        outline: none;
+        min-width: 200px;
+        transition: border-color 0.2s;
+    }
+    .ms-filter select:focus {
+        border-color: #e60012;
+    }
+
+    /* Timeline container */
+    .timeline {
+        position: relative;
+        padding-left: 48px;
+        max-width: 900px;
+    }
+    .timeline::before {
+        content: "";
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #d9d9d9;
+    }
+
+    /* Date separator */
+    .date-separator {
+        position: relative;
+        margin: 1.5rem 0 0.75rem 0;
+    }
+    .date-dot {
+        position: absolute;
+        left: -35px;
+        top: 2px;
+        width: 14px;
+        height: 14px;
+        background: #e60012;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #e60012;
+        z-index: 2;
+    }
+    .date-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #e60012;
+        background: #fff5f5;
+        display: inline-block;
+        padding: 0.2rem 0.75rem;
+        border-radius: 12px;
+        border: 1px solid #fcc;
+    }
+
+    /* Project header */
+    .project-header {
+        position: relative;
+        margin: 2rem 0 1rem 0;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        border-bottom: 3px solid #e60012;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .project-header .project-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #333;
+    }
+    .project-header .project-dates {
+        font-size: 0.75rem;
+        color: #999;
+        margin-top: 0.15rem;
+    }
+    .project-dot {
+        position: absolute;
+        left: -37px;
+        top: 12px;
+        width: 16px;
+        height: 16px;
+        background: #e60012;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #e60012;
+        z-index: 2;
+    }
+
+    /* Task card */
+    .task-node {
+        position: relative;
+        margin: 0.5rem 0;
+    }
+    .task-dot {
+        position: absolute;
+        left: -33px;
+        top: 14px;
+        width: 10px;
+        height: 10px;
+        background: #484848;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        z-index: 2;
+    }
+    .task-dot.completed {
+        background: #0ab44a;
+    }
+    .task-card {
+        background: #fff;
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        transition: all 0.15s;
+    }
+    .task-card:hover {
+        border-color: #e60012;
+        box-shadow: 0 2px 8px rgba(230,0,18,0.1);
+    }
+    .task-card.completed {
+        opacity: 0.6;
+    }
+    .task-card .task-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    .task-card.completed .task-title {
+        text-decoration: line-through;
+        color: #999;
+    }
+    .task-meta {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: #888;
+        flex-wrap: wrap;
+    }
+    .task-meta .member {
+        color: #0068b7;
+        font-weight: 600;
+    }
+    .task-status {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 0.1rem 0.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .task-status.done {
+        background: #e6f9ee;
+        color: #0ab44a;
+    }
+    .task-status.pending {
+        background: #fff5e6;
+        color: #f5a623;
+    }
+
+    /* Checks edit link */
+    .ms-checks-link {
+        display: inline-block;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #e60012;
+        text-decoration: none;
+        padding: 0.2rem 0.5rem;
+        border: 1.5px solid #e60012;
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+    .ms-checks-link:hover {
+        background: #e60012;
+        color: #fff;
+    }
+
+    /* Child tasks indentation */
+    .children-list {
+        margin-left: 1.5rem;
+        border-left: 2px dashed #e8e8e8;
+        padding-left: 0.75rem;
+    }
+    .children-list .task-card {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    .children-list .task-dot {
+        width: 8px;
+        height: 8px;
+        left: -27px;
+    }
+
+    /* Check items */
+    .check-list {
+        margin-top: 0.5rem;
+        padding-top: 0.4rem;
+        border-top: 1px dashed #eee;
+    }
+    .check-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+        padding: 0.2rem 0;
+        font-size: 0.78rem;
+        color: #555;
+    }
+    .check-item.checked {
+        opacity: 0.5;
+    }
+    .check-item.checked .check-title {
+        text-decoration: line-through;
+        color: #aaa;
+    }
+    .check-toggle {
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        border-radius: 3px;
+        border: 1.5px solid #bbb;
+        color: #bbb;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: #fff;
+        margin-top: 1px;
+    }
+    .check-toggle:hover {
+        border-color: #0ab44a;
+        color: #0ab44a;
+    }
+    .check-item.checked .check-toggle {
+        background: #0ab44a;
+        border-color: #0ab44a;
+        color: #fff;
+    }
+    .check-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.2rem;
+        align-items: center;
+    }
+    .check-title {
+        margin-right: 0.3rem;
+    }
+    .tag-pill {
+        font-size: 0.6rem;
+        padding: 0.05rem 0.35rem;
+        border-radius: 8px;
+        color: #fff;
+        white-space: nowrap;
+    }
+    .tag-pill.inputs { background: #0068b7; }
+    .tag-pill.outputs { background: #0ab44a; }
+    .tag-pill.results { background: #f5a623; }
+    .tag-pill.evidences { background: #9b59b6; }
+
+    .empty-message {
+        text-align: center;
+        color: #a0a0a0;
+        padding: 3rem;
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ms-header">
+    <span class="ms-title">マイルストーン タイムライン</span>
+    <div class="ms-filter">
+        <label for="ms-project-select">プロジェクト:</label>
+        <select id="ms-project-select">
+            <option value="">全プロジェクト</option>
+            {% for project in projects %}
+            <option value="{{ project.id }}">{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="timeline" id="timeline">
+    <p class="empty-message">読み込み中...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const container = document.getElementById("timeline");
+    const projectSelect = document.getElementById("ms-project-select");
+    let allProjects = [];
+
+    try {
+        const resp = await fetch("/api/v1/milestones");
+        if (!resp.ok) throw new Error("API error");
+        allProjects = await resp.json();
+        renderFiltered();
+    } catch (err) {
+        container.innerHTML = '<p class="empty-message">データの読み込みに失敗しました</p>';
+    }
+
+    projectSelect.addEventListener("change", renderFiltered);
+
+    function renderFiltered() {
+        const pid = projectSelect.value;
+        const filtered = pid
+            ? allProjects.filter(p => p.id === parseInt(pid))
+            : allProjects;
+        render(filtered);
+    }
+
+    function escHtml(str) {
+        if (!str) return "";
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function fmtDatetime(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    }
+
+    function dateKey(iso) {
+        if (!iso) return "";
+        return iso.substring(0, 10);
+    }
+
+    function renderPills(arr, cls) {
+        if (!arr || arr.length === 0) return "";
+        return arr.map(v => `<span class="tag-pill ${cls}">${escHtml(v)}</span>`).join(" ");
+    }
+
+    function renderCheckItems(items) {
+        if (!items || items.length === 0) return "";
+        let html = '<div class="check-list">';
+        for (const ci of items) {
+            const cls = ci.is_checked ? "check-item checked" : "check-item";
+            const tick = ci.is_checked ? "&#10003;" : "";
+            const pills = [
+                renderPills(ci.inputs, "inputs"),
+                renderPills(ci.outputs, "outputs"),
+                renderPills(ci.results, "results"),
+                renderPills(ci.evidences, "evidences"),
+            ].filter(s => s).join(" ");
+            html += `<div class="${cls}">
+                <div class="check-toggle" data-check-id="${ci.id}">${tick}</div>
+                <div class="check-info">
+                    <span class="check-title">${escHtml(ci.title)}</span>
+                    ${pills}
+                </div>
+            </div>`;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function renderTask(task, isChild) {
+        const dotCls = task.is_completed ? "task-dot completed" : "task-dot";
+        const cardCls = task.is_completed ? "task-card completed" : "task-card";
+        const statusHtml = task.is_completed
+            ? '<span class="task-status done">完了</span>'
+            : '<span class="task-status pending">進行中</span>';
+        const dateRange = [fmtDatetime(task.start_time), fmtDatetime(task.end_time)].filter(Boolean).join(" ~ ");
+
+        let html = `<div class="task-node">
+            <div class="${dotCls}"></div>
+            <div class="${cardCls}">
+                <div class="task-title">${escHtml(task.title)}</div>
+                <div class="task-meta">
+                    ${dateRange ? `<span>${dateRange}</span>` : ""}
+                    ${task.assigned_member ? `<span class="member">${escHtml(task.assigned_member)}</span>` : ""}
+                    ${statusHtml}
+                </div>
+                ${renderCheckItems(task.check_items)}
+                <a href="/tasks/${task.id}/checks" class="ms-checks-link">達成項目を編集</a>
+            </div>`;
+
+        if (task.children && task.children.length > 0) {
+            html += '<div class="children-list">';
+            for (const child of task.children) {
+                html += renderTask(child, true);
+            }
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function render(projects) {
+        if (!projects || projects.length === 0) {
+            container.innerHTML = '<p class="empty-message">プロジェクトがありません</p>';
+            return;
+        }
+
+        let html = "";
+        let lastDate = "";
+
+        for (const project of projects) {
+            // Project date separator
+            const projDate = project.start_date || "";
+            if (projDate && projDate !== lastDate) {
+                html += `<div class="date-separator">
+                    <div class="date-dot"></div>
+                    <span class="date-label">${escHtml(projDate)}</span>
+                </div>`;
+                lastDate = projDate;
+            }
+
+            // Project header
+            const dateInfo = [project.start_date, project.end_date].filter(Boolean).join(" ~ ");
+            html += `<div class="project-header">
+                <div class="project-dot"></div>
+                <div class="project-name">${escHtml(project.name)}</div>
+                ${dateInfo ? `<div class="project-dates">${escHtml(dateInfo)}</div>` : ""}
+            </div>`;
+
+            if (!project.tasks || project.tasks.length === 0) {
+                html += '<p style="color:#aaa; font-size:0.85rem; margin-left:0.5rem;">タスクなし</p>';
+                continue;
+            }
+
+            for (const task of project.tasks) {
+                // Date separator for task
+                const taskDate = dateKey(task.start_time);
+                if (taskDate && taskDate !== lastDate) {
+                    html += `<div class="date-separator">
+                        <div class="date-dot"></div>
+                        <span class="date-label">${escHtml(taskDate)}</span>
+                    </div>`;
+                    lastDate = taskDate;
+                }
+                html += renderTask(task, false);
+            }
+        }
+
+        container.innerHTML = html;
+
+        // Attach check toggle listeners
+        container.querySelectorAll(".check-toggle").forEach(el => {
+            el.addEventListener("click", async () => {
+                const id = parseInt(el.dataset.checkId);
+                const parent = el.closest(".check-item");
+                const isChecked = parent.classList.contains("checked");
+                const newState = !isChecked;
+                try {
+                    const resp = await fetch(`/api/v1/checks/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ is_checked: newState }),
+                    });
+                    if (!resp.ok) { alert("更新に失敗しました"); return; }
+                    if (newState) {
+                        parent.classList.add("checked");
+                        el.innerHTML = "&#10003;";
+                    } else {
+                        parent.classList.remove("checked");
+                        el.innerHTML = "";
+                    }
+                } catch (err) { alert("通信エラー"); }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
