@@ -355,11 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         container.innerHTML = "";
 
-        if (projects.length === 0) {
-            container.innerHTML = '<p class="placeholder">プロジェクトがありません</p>';
-            return;
-        }
-
         // Build project navigation cards
         const navCards = document.createElement("div");
         navCards.className = "overview-nav";
@@ -448,7 +443,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.head.appendChild(style);
 
         if (allBars.length === 0) {
-            container.innerHTML += '<p class="placeholder">タスクがありません</p>';
+            const emptyMsg = document.createElement("p");
+            emptyMsg.className = "placeholder";
+            emptyMsg.textContent = "タスクがありません";
+            container.appendChild(emptyMsg);
             return;
         }
 
