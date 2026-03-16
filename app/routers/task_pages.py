@@ -100,3 +100,37 @@ async def edit_task_page(
         "task": task_data,
         "is_edit": True,
     })
+
+
+@router.get("/projects/new", response_class=HTMLResponse)
+async def new_project_page(request: Request):
+    return templates.TemplateResponse(request, "project_form.html", {
+        "project": None,
+        "is_edit": False,
+    })
+
+
+@router.get("/projects/{project_id}/edit", response_class=HTMLResponse)
+async def edit_project_page(
+    request: Request,
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    project = await db.get(Project, project_id)
+    if not project:
+        from app.exceptions import NotFoundError
+        raise NotFoundError("Project", project_id)
+
+    project_data = {
+        "id": project.id,
+        "name": project.name,
+        "description": project.description or "",
+        "start_date": str(project.start_date) if project.start_date else "",
+        "end_date": str(project.end_date) if project.end_date else "",
+        "team_members": ", ".join(project.team_members) if project.team_members else "",
+    }
+
+    return templates.TemplateResponse(request, "project_form.html", {
+        "project": project_data,
+        "is_edit": True,
+    })

@@ -382,6 +382,14 @@ document.addEventListener("DOMContentLoaded", () => {
             card.appendChild(meta);
             navCards.appendChild(card);
         });
+
+        // Add project button
+        const addProjCard = document.createElement("a");
+        addProjCard.className = "overview-nav-card overview-nav-add";
+        addProjCard.href = "/projects/new";
+        addProjCard.innerHTML = '<span class="overview-nav-add-icon">＋</span><span class="overview-nav-name">プロジェクト追加</span>';
+        navCards.appendChild(addProjCard);
+
         container.appendChild(navCards);
 
         // Build one combined gantt with all projects

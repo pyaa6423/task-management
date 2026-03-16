@@ -726,6 +726,32 @@ div.details-container,
     color: #999;
 }
 
+.overview-nav-add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-style: dashed;
+    color: #999;
+}
+
+.overview-nav-add:hover {
+    border-color: #e60012;
+    color: #e60012;
+}
+
+.overview-nav-add-icon {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.overview-nav-add .overview-nav-name {
+    font-size: 0.8rem;
+    color: inherit;
+}
+
 /* ── Overview: fixed labels + scrollable gantt ── */
 .overview-wrapper {
     display: flex;
