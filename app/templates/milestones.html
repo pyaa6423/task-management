@@ -212,6 +212,48 @@
         background: #fff5e6;
         color: #f5a623;
     }
+    .task-complete-toggle {
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .task-complete-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    /* Expandable card with children */
+    .task-card.has-children {
+        cursor: pointer;
+    }
+    .task-card.has-children:hover {
+        border-color: #e60012;
+    }
+    .task-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .task-children-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #999;
+        background: #f0f0f0;
+        padding: 0.15rem 0.5rem;
+        border-radius: 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .task-expand-icon {
+        font-size: 0.55rem;
+        transition: transform 0.2s;
+    }
+    .task-card.has-children.open .task-expand-icon {
+        transform: rotate(90deg);
+    }
 
     /* Checks edit link */
     .ms-checks-link {
@@ -477,19 +519,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     function renderTask(task, isChild) {
         const dotCls = task.is_completed ? "task-dot completed" : "task-dot";
         const cardCls = task.is_completed ? "task-card completed" : "task-card";
-        const statusHtml = task.is_completed
-            ? '<span class="task-status done">完了</span>'
-            : '<span class="task-status pending">進行中</span>';
+        const statusCls = task.is_completed ? "task-status done" : "task-status pending";
+        const statusText = task.is_completed ? "完了" : "進行中";
         const dateRange = [fmtDatetime(task.start_time), fmtDatetime(task.end_time)].filter(Boolean).join(" ~ ");
 
-        let html = `<div class="task-node">
+        const hasChildren = task.children && task.children.length > 0;
+        const childCount = hasChildren ? task.children.length : 0;
+        const childDone = hasChildren ? task.children.filter(c => c.is_completed).length : 0;
+        const expandCls = hasChildren ? "has-children" : "";
+
+        let html = `<div class="task-node" data-task-id="${task.id}">
             <div class="${dotCls}"></div>
-            <div class="${cardCls}">
-                <div class="task-title">${escHtml(task.title)}</div>
+            <div class="${cardCls} ${expandCls}" ${hasChildren ? `data-toggle-target="children-${task.id}"` : ""}>
+                <div class="task-title-row">
+                    <div class="task-title">${escHtml(task.title)}</div>
+                    ${hasChildren ? `<span class="task-children-badge"><span class="task-expand-icon">▶</span> ${childDone}/${childCount}</span>` : ""}
+                </div>
                 <div class="task-meta">
                     ${dateRange ? `<span>${dateRange}</span>` : ""}
                     ${task.assigned_member ? `<span class="member">${escHtml(task.assigned_member)}</span>` : ""}
-                    ${statusHtml}
+                    <span class="${statusCls} task-complete-toggle" data-task-id="${task.id}" title="クリックで完了/未完了を切替">${statusText}</span>
                 </div>
                 ${renderCheckItems(task.check_items)}
                 <a href="/tasks/${task.id}/checks" class="ms-checks-link">達成項目を編集</a>
@@ -497,7 +546,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>`;
 
         if (task.children && task.children.length > 0) {
-            html += '<div class="children-list">';
+            const childCount = task.children.length;
+            const childDone = task.children.filter(c => c.is_completed).length;
+            html += `<div class="children-list children-collapsible" id="children-${task.id}" style="display:none;">`;
             for (const child of task.children) {
                 html += renderTask(child, true);
             }
@@ -620,7 +671,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         container.innerHTML = html;
 
-        // Attach check toggle listeners
+        // Attach check item toggle listeners
         container.querySelectorAll(".check-toggle").forEach(el => {
             el.addEventListener("click", async () => {
                 const id = parseInt(el.dataset.checkId);
@@ -641,6 +692,43 @@ document.addEventListener("DOMContentLoaded", async () => {
                         parent.classList.remove("checked");
                         el.innerHTML = "";
                     }
+                } catch (err) { alert("通信エラー"); }
+            });
+        });
+
+        // Attach card click to expand/collapse children
+        container.querySelectorAll(".task-card.has-children").forEach(card => {
+            card.addEventListener("click", (e) => {
+                // Don't toggle if clicking a link or button inside the card
+                if (e.target.closest("a, .task-complete-toggle, .check-toggle")) return;
+                const targetId = card.dataset.toggleTarget;
+                const target = document.getElementById(targetId);
+                if (!target) return;
+                const isOpen = target.style.display !== "none";
+                target.style.display = isOpen ? "none" : "block";
+                card.classList.toggle("open", !isOpen);
+            });
+        });
+
+        // Attach task complete toggle listeners
+        container.querySelectorAll(".task-complete-toggle").forEach(el => {
+            el.addEventListener("click", async () => {
+                const taskId = parseInt(el.dataset.taskId);
+                const isDone = el.classList.contains("done");
+                const newState = !isDone;
+                try {
+                    const resp = await fetch(`/api/v1/tasks/${taskId}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ is_completed: newState }),
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        alert(err.detail || "更新に失敗しました");
+                        return;
+                    }
+                    // Re-render to reflect auto-completion of parents
+                    renderFiltered();
                 } catch (err) { alert("通信エラー"); }
             });
         });

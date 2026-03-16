@@ -49,6 +49,10 @@ async def create_task(db: AsyncSession, project_id: int, data: TaskCreate, paren
         parent = await db.get(Task, parent_id)
         if not parent:
             raise NotFoundError("Task", parent_id)
+        # Auto-uncomplete parent if it was completed
+        if parent.is_completed:
+            parent.is_completed = False
+            parent.completed_at = None
 
     task = Task(project_id=project_id, parent_id=parent_id, **data.model_dump())
     db.add(task)
@@ -77,6 +81,24 @@ async def update_task(db: AsyncSession, task_id: int, data: TaskUpdate) -> Task:
         setattr(task, key, value)
 
     await db.commit()
+
+    # Auto-complete parent if all siblings are now complete
+    if task.parent_id and task.is_completed:
+        parent_id = task.parent_id
+        db.expire_all()
+        stmt = (
+            select(Task)
+            .options(selectinload(Task.children))
+            .where(Task.id == parent_id)
+        )
+        parent = await db.scalar(stmt)
+        if parent and not parent.is_completed:
+            all_done = all(c.is_completed for c in parent.children)
+            if all_done:
+                parent.is_completed = True
+                parent.completed_at = datetime.now(timezone.utc)
+                await db.commit()
+
     return await get_task(db, task_id)
 
 

@@ -90,6 +90,8 @@ uv run uvicorn app.main:app --reload
 | URL | 内容 |
 |-----|------|
 | http://localhost:8000/gantt | ガントチャート |
+| http://localhost:8000/milestones | マイルストーン タイムライン |
+| http://localhost:8000/events | 予定管理 |
 | http://localhost:8000/docs | Swagger UI (API ドキュメント) |
 | http://localhost:8000/health | ヘルスチェック |
 
@@ -153,6 +155,51 @@ DB ファイル (`taskmanager.db`) はアプリ初回起動時に自動作成さ
 | GET | `/api/v1/reports/monthly?year=2026&month=3` | 月報 |
 
 全エンドポイントの詳細は Swagger UI (`/docs`) で確認できます。
+
+## バックアップ / リストア
+
+サーバー起動中にデータを JSON ファイルにエクスポート・インポートできます。DB スキーマ変更時のデータ移行に使用します。
+
+### バックアップ
+
+```bash
+# サーバー起動中に実行
+uv run python scripts/backup.py
+# → backup.json が作成される
+```
+
+別のサーバーに対して実行する場合:
+
+```bash
+uv run python scripts/backup.py http://localhost:8000
+```
+
+### リストア
+
+```bash
+# 1. DB を削除
+rm taskmanager.db
+
+# 2. サーバーを再起動（新しい DB が自動作成される）
+uv run uvicorn app.main:app --reload
+
+# 3. バックアップからデータを復元
+uv run python scripts/restore.py
+# → backup.json からデータが復元される
+```
+
+別のファイルから復元する場合:
+
+```bash
+uv run python scripts/restore.py my_backup.json http://localhost:8000
+```
+
+### バックアップに含まれるデータ
+
+- プロジェクト（名前、説明、日付、メンバー、完了状態）
+- タスク（入れ子構造を含む全階層）
+- 達成項目（チェック状態、input/output/results/evidences）
+- 予定（プロジェクト紐づき + 全体）
 
 ## データモデル
 
