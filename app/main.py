@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.exceptions import AppError
@@ -41,6 +41,11 @@ app.include_router(events.router)
 @app.exception_handler(AppError)
 async def app_error_handler(request, exc: AppError):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/gantt")
 
 
 @app.get("/health")
