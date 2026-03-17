@@ -752,6 +752,23 @@ div.details-container,
     color: inherit;
 }
 
+.overview-nav-edit {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #e60012;
+    text-decoration: none;
+    padding: 0.15rem 0.4rem;
+    border: 1.5px solid #e60012;
+    border-radius: 4px;
+    transition: all 0.15s;
+    align-self: flex-end;
+}
+
+.overview-nav-edit:hover {
+    background: #e60012;
+    color: #fff;
+}
+
 /* ── Overview: fixed labels + scrollable gantt ── */
 .overview-wrapper {
     display: flex;

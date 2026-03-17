@@ -373,8 +373,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const taskCount = project.tasks.length;
             const completedCount = project.tasks.filter(t => t.is_completed).length;
             meta.textContent = `${completedCount}/${taskCount} タスク完了`;
+            const editLink = document.createElement("a");
+            editLink.className = "overview-nav-edit";
+            editLink.href = `/projects/${project.id}/edit`;
+            editLink.textContent = "編集";
+            editLink.addEventListener("click", (e) => e.stopPropagation());
+
             card.appendChild(name);
             card.appendChild(meta);
+            card.appendChild(editLink);
             navCards.appendChild(card);
         });
 

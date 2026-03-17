@@ -613,7 +613,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="project-dot"></div>
                 <div class="project-name">${escHtml(project.name)}</div>
                 ${dateInfo ? `<div class="project-dates">${escHtml(dateInfo)}</div>` : ""}
-                <a href="/projects/${project.id}/tasks/new" class="ms-checks-link" style="margin-left:auto;">＋ タスク追加</a>
+                <a href="/projects/${project.id}/edit" class="ms-checks-link" style="margin-left:auto;">プロジェクト編集</a>
+                <a href="/projects/${project.id}/tasks/new" class="ms-checks-link">＋ タスク追加</a>
             </div>`;
 
             // Merge project events + global events + tasks, sorted by date
