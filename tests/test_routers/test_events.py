@@ -124,3 +124,49 @@ async def test_events_html_page(client):
     response = await client.get("/events")
     assert response.status_code == 200
     assert "予定管理" in response.text
+
+
+async def test_events_html_page_with_data(client):
+    """Covers events_page serialization with events and projects."""
+    pid = await _make_project(client, "EventPageProj")
+
+    # Create events (one global, one project-specific)
+    await client.post("/api/v1/events", json={
+        "title": "Global Event",
+        "event_date": "2026-05-01",
+        "description": "A global event",
+    })
+    await client.post("/api/v1/events", json={
+        "title": "Project Event",
+        "event_date": "2026-05-15",
+        "project_id": pid,
+        "color": "#0068b7",
+    })
+
+    response = await client.get("/events")
+    assert response.status_code == 200
+    assert "Global Event" in response.text
+    assert "Project Event" in response.text
+    assert "EventPageProj" in response.text
+
+
+async def test_update_event_change_project(client):
+    """Covers update_event project validation branch."""
+    pid = await _make_project(client, "EvProj")
+    create_resp = await client.post("/api/v1/events", json={
+        "title": "Ev", "event_date": "2026-09-01"
+    })
+    event_id = create_resp.json()["id"]
+
+    # Update with valid project_id
+    resp = await client.put(f"/api/v1/events/{event_id}", json={
+        "project_id": pid,
+    })
+    assert resp.status_code == 200
+    assert resp.json()["project_id"] == pid
+
+    # Update with invalid project_id
+    resp = await client.put(f"/api/v1/events/{event_id}", json={
+        "project_id": 9999,
+    })
+    assert resp.status_code == 404

@@ -12,7 +12,7 @@ router = APIRouter(tags=["gantt"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _task_to_gantt(task, children=None):
+def _task_to_gantt(task: Task, children: list | None = None) -> dict:
     if children is None:
         children = getattr(task, "children", [])
     completed = sum(1 for c in children if c.is_completed)

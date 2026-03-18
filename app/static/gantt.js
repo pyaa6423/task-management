@@ -64,6 +64,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const d = new Date(iso);
         return `${d.getMonth()+1}/${d.getDate()}`;
     }
+
+    // ── Helper: create an action link (checks, child task, edit) ──
+    function createActionLink(className, href, text, title) {
+        const link = document.createElement("a");
+        link.className = className;
+        link.href = href;
+        link.textContent = text;
+        link.title = title;
+        link.addEventListener("click", stopPropagation);
+        return link;
+    }
+
+    function stopPropagation(e) { e.stopPropagation(); }
     const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
     // ── Event overlay lines ──
@@ -377,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
             editLink.className = "overview-nav-edit";
             editLink.href = `/projects/${project.id}/edit`;
             editLink.textContent = "編集";
-            editLink.addEventListener("click", (e) => e.stopPropagation());
+            editLink.addEventListener("click", stopPropagation);
 
             card.appendChild(name);
             card.appendChild(meta);
@@ -953,32 +966,10 @@ document.addEventListener("DOMContentLoaded", () => {
             card.appendChild(check);
             card.appendChild(info);
 
-            // Check items link
-            const checksLink = document.createElement("a");
-            checksLink.className = "expand-card-checks-link";
-            checksLink.href = `/tasks/${child.id.replace("task-", "")}/checks`;
-            checksLink.textContent = "達成項目";
-            checksLink.title = "達成項目を表示";
-            checksLink.addEventListener("click", (e) => e.stopPropagation());
-            card.appendChild(checksLink);
-
-            // Add child task link
-            const addChildLink = document.createElement("a");
-            addChildLink.className = "expand-card-checks-link";
-            addChildLink.href = `/projects/${currentProjectId}/tasks/new?parent_id=${child.id.replace("task-", "")}`;
-            addChildLink.textContent = "＋子タスク";
-            addChildLink.title = "子タスクを追加";
-            addChildLink.addEventListener("click", (e) => e.stopPropagation());
-            card.appendChild(addChildLink);
-
-            // Edit task link
-            const editLink = document.createElement("a");
-            editLink.className = "expand-card-checks-link";
-            editLink.href = `/tasks/${child.id.replace("task-", "")}/edit`;
-            editLink.textContent = "編集";
-            editLink.title = "タスクを編集";
-            editLink.addEventListener("click", (e) => e.stopPropagation());
-            card.appendChild(editLink);
+            const childTaskId = child.id.replace("task-", "");
+            card.appendChild(createActionLink("expand-card-checks-link", `/tasks/${childTaskId}/checks`, "達成項目", "達成項目を表示"));
+            card.appendChild(createActionLink("expand-card-checks-link", `/projects/${currentProjectId}/tasks/new?parent_id=${childTaskId}`, "＋子タスク", "子タスクを追加"));
+            card.appendChild(createActionLink("expand-card-checks-link", `/tasks/${childTaskId}/edit`, "編集", "タスクを編集"));
 
             cards.appendChild(card);
         });
@@ -1047,29 +1038,10 @@ document.addEventListener("DOMContentLoaded", () => {
         info.appendChild(name);
         info.appendChild(meta);
 
-        // Check items link
-        const checksLink = document.createElement("a");
-        checksLink.className = "leaf-card-checks-link";
-        checksLink.href = `/tasks/${taskData.id.replace("task-", "")}/checks`;
-        checksLink.textContent = "達成項目";
-        checksLink.title = "達成項目を表示";
-        checksLink.addEventListener("click", (e) => e.stopPropagation());
-
-        // Add child task link
-        const addChildLink = document.createElement("a");
-        addChildLink.className = "leaf-card-checks-link";
-        addChildLink.href = `/projects/${currentProjectId}/tasks/new?parent_id=${taskData.id.replace("task-", "")}`;
-        addChildLink.textContent = "＋子タスク";
-        addChildLink.title = "子タスクを追加";
-        addChildLink.addEventListener("click", (e) => e.stopPropagation());
-
-        // Edit task link
-        const editLink = document.createElement("a");
-        editLink.className = "leaf-card-checks-link";
-        editLink.href = `/tasks/${taskData.id.replace("task-", "")}/edit`;
-        editLink.textContent = "編集";
-        editLink.title = "タスクを編集";
-        editLink.addEventListener("click", (e) => e.stopPropagation());
+        const leafTaskId = taskData.id.replace("task-", "");
+        const checksLink = createActionLink("leaf-card-checks-link", `/tasks/${leafTaskId}/checks`, "達成項目", "達成項目を表示");
+        const addChildLink = createActionLink("leaf-card-checks-link", `/projects/${currentProjectId}/tasks/new?parent_id=${leafTaskId}`, "＋子タスク", "子タスクを追加");
+        const editLink = createActionLink("leaf-card-checks-link", `/tasks/${leafTaskId}/edit`, "編集", "タスクを編集");
 
         card.appendChild(check);
         card.appendChild(dot);

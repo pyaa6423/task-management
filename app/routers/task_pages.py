@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.database import get_db
+from app.exceptions import NotFoundError
 from app.services import task_service
 from app.models.task import Task
 from app.models.project import Project
@@ -13,9 +14,9 @@ router = APIRouter(tags=["task_pages"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _flatten_tasks(tasks, depth=0, exclude_id=None):
+def _flatten_tasks(tasks: list, depth: int = 0, exclude_id: int | None = None) -> list[dict]:
     """Flatten task tree into a list with depth for indentation."""
-    result = []
+    result: list[dict] = []
     for t in tasks:
         if t.id == exclude_id:
             continue
@@ -26,7 +27,7 @@ def _flatten_tasks(tasks, depth=0, exclude_id=None):
     return result
 
 
-async def _get_all_tasks_tree(db, project_id):
+async def _get_all_tasks_tree(db: AsyncSession, project_id: int) -> list[Task]:
     """Get all tasks in project as a tree (top-level with children loaded)."""
     stmt = (
         select(Task)
@@ -45,7 +46,6 @@ async def new_task_page(
 ):
     project = await db.get(Project, project_id)
     if not project:
-        from app.exceptions import NotFoundError
         raise NotFoundError("Project", project_id)
 
     tree = await _get_all_tasks_tree(db, project_id)
@@ -118,7 +118,6 @@ async def edit_project_page(
 ):
     project = await db.get(Project, project_id)
     if not project:
-        from app.exceptions import NotFoundError
         raise NotFoundError("Project", project_id)
 
     project_data = {

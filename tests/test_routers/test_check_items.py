@@ -101,3 +101,26 @@ async def test_checks_html_page(client):
     response = await client.get(f"/tasks/{task_id}/checks")
     assert response.status_code == 200
     assert "達成項目" in response.text
+
+
+async def test_checks_html_page_with_items(client):
+    """Covers checks_page serialization of check items with all fields."""
+    task_id = await _make_task(client)
+
+    # Create a check item with all fields and mark it checked
+    create_resp = await client.post(f"/api/v1/tasks/{task_id}/checks", json={
+        "title": "Full Check",
+        "inputs": ["spec", "design"],
+        "outputs": ["report"],
+        "results": ["passed"],
+        "evidences": ["screenshot"],
+    })
+    check_id = create_resp.json()["id"]
+    await client.put(f"/api/v1/checks/{check_id}", json={"is_checked": True})
+
+    response = await client.get(f"/tasks/{task_id}/checks")
+    assert response.status_code == 200
+    assert "Full Check" in response.text
+    # Check items are serialized as JSON for the template
+    assert "spec" in response.text
+    assert "report" in response.text

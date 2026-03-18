@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -6,14 +8,16 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from app.database import get_db
 from app.models.task import Task
-from app.models.check_item import CheckItem
 from app.models.project import Project
+
+if TYPE_CHECKING:
+    from app.models.check_item import CheckItem
 
 router = APIRouter(tags=["milestones"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _check_item_to_dict(ci):
+def _check_item_to_dict(ci: "CheckItem") -> dict:
     return {
         "id": ci.id,
         "title": ci.title,
@@ -26,7 +30,7 @@ def _check_item_to_dict(ci):
     }
 
 
-def _task_to_dict(task):
+def _task_to_dict(task: Task) -> dict:
     from datetime import datetime
     children = sorted(
         (task.children or []),
