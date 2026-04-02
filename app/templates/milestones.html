@@ -410,6 +410,10 @@
             {% endfor %}
         </select>
     </div>
+    <label class="hide-completed-toggle" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:#484848;user-select:none;white-space:nowrap;">
+        <input type="checkbox" id="ms-hide-completed" style="accent-color:#e60012;width:16px;height:16px;cursor:pointer;">
+        <span>完了を非表示</span>
+    </label>
 </div>
 
 <div class="timeline" id="timeline">
@@ -422,8 +426,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("timeline");
     const projectSelect = document.getElementById("ms-project-select");
+    const hideCompletedCheckbox = document.getElementById("ms-hide-completed");
     let allProjects = [];
     let allEvents = [];
+    let hideCompleted = localStorage.getItem("hideCompleted") === "true";
+    hideCompletedCheckbox.checked = hideCompleted;
 
     try {
         const [msResp, evResp] = await Promise.all([
@@ -439,6 +446,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     projectSelect.addEventListener("change", renderFiltered);
+    hideCompletedCheckbox.addEventListener("change", () => {
+        hideCompleted = hideCompletedCheckbox.checked;
+        localStorage.setItem("hideCompleted", hideCompleted);
+        renderFiltered();
+    });
 
     function renderFiltered() {
         const pid = projectSelect.value;
@@ -606,7 +618,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             for (const ev of pEvents) {
                 allItems.push({ type: "event", date: ev.event_date || "", data: ev });
             }
+            const hiddenTasks = [];
             for (const task of (project.tasks || [])) {
+                if (hideCompleted && task.is_completed) {
+                    hiddenTasks.push(task);
+                    continue;
+                }
                 const d = task.start_time ? task.start_time.split("T")[0] : "";
                 allItems.push({ type: "task", date: d, data: task });
             }
@@ -650,6 +667,24 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <span class="date-label-note">（${escHtml(project.name)} 終了）</span>
                 </div>`;
             }
+
+            // Hidden completed tasks summary
+            if (hideCompleted && hiddenTasks.length > 0) {
+                html += `<div class="completed-summary" style="margin:0.5rem 0 1rem 1.5rem;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;">
+                    <div class="completed-summary-header" style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:#888;user-select:none;">
+                        <span class="completed-summary-arrow" style="font-size:0.7rem;transition:transform 0.2s;">▶</span>
+                        <span>完了済みタスク (${hiddenTasks.length}件)</span>
+                    </div>
+                    <div class="completed-summary-list" style="display:none;padding:0 1rem 0.6rem;">
+                        ${hiddenTasks.map(t => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;font-size:0.82rem;color:#999;border-bottom:1px solid #f0f0f0;">
+                            <span style="color:#0ab44a;font-weight:700;">✓</span>
+                            <span style="text-decoration:line-through;">${escHtml(t.title)}</span>
+                            <span style="margin-left:auto;font-size:0.78rem;color:#bbb;">${fmtDatetime(t.start_time)} ~ ${fmtDatetime(t.end_time)}</span>
+                            <a href="/tasks/${t.id}/edit" style="color:#e60012;text-decoration:none;font-size:0.78rem;margin-left:0.5rem;">編集</a>
+                        </div>`).join("")}
+                    </div>
+                </div>`;
+            }
         }
 
         container.innerHTML = html;
@@ -690,6 +725,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const isOpen = target.style.display !== "none";
                 target.style.display = isOpen ? "none" : "block";
                 card.classList.toggle("open", !isOpen);
+            });
+        });
+
+        // Attach completed summary toggle listeners
+        container.querySelectorAll(".completed-summary-header").forEach(header => {
+            header.addEventListener("click", () => {
+                const summary = header.parentElement;
+                summary.classList.toggle("open");
+                const list = summary.querySelector(".completed-summary-list");
+                const arrow = summary.querySelector(".completed-summary-arrow");
+                if (summary.classList.contains("open")) {
+                    list.style.display = "block";
+                    arrow.style.transform = "rotate(90deg)";
+                } else {
+                    list.style.display = "none";
+                    arrow.style.transform = "";
+                }
             });
         });
 
