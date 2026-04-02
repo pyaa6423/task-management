@@ -175,6 +175,108 @@ main {
     border-color: #e60012;
 }
 
+/* ── Hide-completed toggle ── */
+.hide-completed-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #484848;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.hide-completed-toggle input[type="checkbox"] {
+    accent-color: #e60012;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ── Completed tasks summary ── */
+.completed-summary {
+    margin-top: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.completed-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #888;
+    user-select: none;
+}
+
+.completed-summary-header:hover {
+    color: #484848;
+}
+
+.completed-summary-arrow {
+    transition: transform 0.2s;
+    font-size: 0.7rem;
+}
+
+.completed-summary.open .completed-summary-arrow {
+    transform: rotate(90deg);
+}
+
+.completed-summary-list {
+    display: none;
+    padding: 0 1rem 0.6rem;
+}
+
+.completed-summary.open .completed-summary-list {
+    display: block;
+}
+
+.completed-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    font-size: 0.82rem;
+    color: #999;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.completed-summary-item:last-child {
+    border-bottom: none;
+}
+
+.completed-summary-item .completed-check {
+    color: #0ab44a;
+    font-weight: 700;
+}
+
+.completed-summary-item .completed-name {
+    text-decoration: line-through;
+}
+
+.completed-summary-item .completed-date {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: #bbb;
+}
+
+.completed-summary-item a {
+    color: #e60012;
+    text-decoration: none;
+    font-size: 0.78rem;
+    margin-left: 0.5rem;
+}
+
+.completed-summary-item a:hover {
+    text-decoration: underline;
+}
+
 /* ── Gantt Container ── */
 #gantt-container {
     background: #ffffff;

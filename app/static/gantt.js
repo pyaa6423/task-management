@@ -4,12 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewButtons = document.querySelectorAll(".view-modes button");
     const themeSwatches = document.querySelectorAll(".theme-swatch");
 
+    const hideCompletedCheckbox = document.getElementById("hide-completed");
+
     let ganttChart = null;
     let currentMode = "Day";
     let currentProjectId = null;
     let colorOverrides = {};
     let currentTasks = [];     // current level's task data
     let expandedTaskId = null; // currently expanded task id (e.g. "task-3")
+    let hideCompleted = false;
 
     // Navigation stack for drill-down
     let navStack = []; // [{ type:"project", projectId } | { type:"task", taskId }]
@@ -316,6 +319,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // ── Hide completed toggle ──
+    hideCompletedCheckbox.addEventListener("change", () => {
+        hideCompleted = hideCompletedCheckbox.checked;
+        localStorage.setItem("hideCompleted", hideCompleted);
+        renderCurrentView();
+    });
+    // Restore saved state
+    if (localStorage.getItem("hideCompleted") === "true") {
+        hideCompleted = true;
+        hideCompletedCheckbox.checked = true;
+    }
+
     let skipPushState = false; // flag to prevent pushState on popstate
 
     projectSelect.addEventListener("change", async () => {
@@ -420,10 +435,18 @@ document.addEventListener("DOMContentLoaded", () => {
         style.id = "gantt-theme-styles";
 
         const theme = themes[currentTheme];
+        const hiddenCompleted = []; // collect hidden completed tasks for summary
 
         projects.forEach((project) => {
-            const tasks = project.tasks.filter(t => t.start && t.end);
+            let tasks = project.tasks.filter(t => t.start && t.end);
             if (tasks.length === 0) return;
+
+            if (hideCompleted) {
+                const completed = tasks.filter(t => t.is_completed);
+                completed.forEach(t => hiddenCompleted.push({ ...t, projectName: project.name, projectId: project.id }));
+                tasks = tasks.filter(t => !t.is_completed);
+                if (tasks.length === 0) return;
+            }
 
             // Project separator bar (full-width label, no real dates — use project date range)
             if (project.start_date && project.end_date) {
@@ -525,6 +548,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 projectSelect.dispatchEvent(new Event("change"));
             }
         });
+
+        // Completed tasks summary section
+        if (hideCompleted && hiddenCompleted.length > 0) {
+            buildCompletedSummary(container, hiddenCompleted);
+        }
     }
 
     // ── Build fixed labels for overview ──
@@ -665,7 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Render current view ──
     function renderCurrentView() {
         const last = navStack[navStack.length - 1];
-        if (!last) return;
+        if (!last) { loadOverview(); return; }
         if (last.type === "project") loadProjectTasks(last.projectId);
         else if (last.type === "task") drillDown(last.taskId);
     }
@@ -702,7 +730,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Main render: gantt bars + task cards below ──
     function renderGanttView(tasks, parentTask) {
-        if (tasks.length === 0) {
+        // Separate completed tasks when hiding
+        const hiddenCompleted = [];
+        let visibleTasks = tasks;
+        if (hideCompleted) {
+            hiddenCompleted.push(...tasks.filter(t => t.is_completed));
+            visibleTasks = tasks.filter(t => !t.is_completed);
+        }
+
+        if (visibleTasks.length === 0 && hiddenCompleted.length === 0) {
             container.innerHTML = '<p class="placeholder">タスクがありません</p>';
             ganttChart = null;
             return;
@@ -720,7 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Task bars
-        tasks.filter(t => t.start && t.end).forEach((t, i) => {
+        visibleTasks.filter(t => t.start && t.end).forEach((t, i) => {
             allBars.push({
                 id: t.id, name: t.name,
                 start: t.start.split("T")[0], end: t.end.split("T")[0],
@@ -730,14 +766,23 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (allBars.length === 0) {
-            container.innerHTML = '<p class="placeholder">日付が設定されていないタスクです</p>';
+            container.innerHTML = "";
+            if (hideCompleted && hiddenCompleted.length > 0) {
+                const msg = document.createElement("p");
+                msg.className = "placeholder";
+                msg.textContent = "表示中のタスクがありません（完了タスクは下部に表示）";
+                container.appendChild(msg);
+                buildCompletedSummary(container, hiddenCompleted);
+            } else {
+                container.innerHTML = '<p class="placeholder">日付が設定されていないタスクです</p>';
+            }
             ganttChart = null;
             return;
         }
 
-        applyColorStyles(tasks, !!parentTask);
+        applyColorStyles(visibleTasks, !!parentTask);
         container.innerHTML = "";
-        buildLegend(tasks, container);
+        buildLegend(visibleTasks, container);
 
         const ganttDiv = document.createElement("div");
         ganttDiv.className = "gantt-target";
@@ -787,7 +832,7 @@ document.addEventListener("DOMContentLoaded", () => {
         container.appendChild(cardsSection);
 
         // Sort all tasks by end date (earliest first)
-        const sortedTasks = [...tasks].sort((a, b) => {
+        const sortedTasks = [...visibleTasks].sort((a, b) => {
             const aEnd = a.end ? new Date(a.end) : new Date("9999-12-31");
             const bEnd = b.end ? new Date(b.end) : new Date("9999-12-31");
             return aEnd - bEnd;
@@ -795,7 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Create placeholders in order, then fill async ones
         sortedTasks.forEach((taskData) => {
-            const taskIndex = tasks.indexOf(taskData);
+            const taskIndex = visibleTasks.indexOf(taskData);
             const placeholder = document.createElement("div");
             placeholder.className = "task-card-slot";
             cardsSection.appendChild(placeholder);
@@ -806,6 +851,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderLeafCard(taskData, taskIndex, placeholder);
             }
         });
+
+        // Completed tasks summary section
+        if (hideCompleted && hiddenCompleted.length > 0) {
+            buildCompletedSummary(container, hiddenCompleted);
+        }
     }
 
     // ── Load and render a single task's card ──
@@ -1051,6 +1101,61 @@ document.addEventListener("DOMContentLoaded", () => {
         card.appendChild(editLink);
         panel.appendChild(card);
         parentEl.appendChild(panel);
+    }
+
+    // ── Build completed tasks summary section ──
+    function buildCompletedSummary(parentEl, completedTasks) {
+        const summary = document.createElement("div");
+        summary.className = "completed-summary";
+
+        const header = document.createElement("div");
+        header.className = "completed-summary-header";
+        header.addEventListener("click", () => summary.classList.toggle("open"));
+
+        const arrow = document.createElement("span");
+        arrow.className = "completed-summary-arrow";
+        arrow.textContent = "▶";
+
+        const label = document.createElement("span");
+        label.textContent = `完了済みタスク (${completedTasks.length}件)`;
+
+        header.appendChild(arrow);
+        header.appendChild(label);
+        summary.appendChild(header);
+
+        const list = document.createElement("div");
+        list.className = "completed-summary-list";
+
+        completedTasks.forEach((task) => {
+            const item = document.createElement("div");
+            item.className = "completed-summary-item";
+
+            const check = document.createElement("span");
+            check.className = "completed-check";
+            check.textContent = "✓";
+
+            const name = document.createElement("span");
+            name.className = "completed-name";
+            name.textContent = task.projectName ? `${task.projectName} / ${task.name}` : task.name;
+
+            const date = document.createElement("span");
+            date.className = "completed-date";
+            date.textContent = `${fmtShortDate(task.start)} → ${fmtShortDate(task.end)}`;
+
+            const taskId = task.id.replace("task-", "");
+            const editLink = document.createElement("a");
+            editLink.href = `/tasks/${taskId}/edit`;
+            editLink.textContent = "編集";
+
+            item.appendChild(check);
+            item.appendChild(name);
+            item.appendChild(date);
+            item.appendChild(editLink);
+            list.appendChild(item);
+        });
+
+        summary.appendChild(list);
+        parentEl.appendChild(summary);
     }
 
     // ── Go back ──
