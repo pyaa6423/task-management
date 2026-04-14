@@ -77,6 +77,35 @@
         margin-top: 0.5rem;
         display: none;
     }
+
+    /* Custom datetime picker */
+    .datetime-picker {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .datetime-picker input[type="date"] {
+        flex: 1;
+        min-width: 0;
+    }
+    .datetime-picker select {
+        width: 4.5rem;
+        padding: 0.5rem 0.3rem;
+        font-size: 0.95rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        background: #fff;
+        color: #484848;
+        outline: none;
+        text-align: center;
+    }
+    .datetime-picker select:focus {
+        border-color: #e60012;
+    }
+    .datetime-picker .datetime-sep {
+        font-weight: 700;
+        color: #888;
+    }
 </style>
 {% endblock %}
 
@@ -105,14 +134,22 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="start_time">開始日時</label>
-                    <input type="datetime-local" id="start_time" name="start_time" step="900"
-                        value="{{ task.start_time if task else '' }}">
+                    <label>開始日時</label>
+                    <div class="datetime-picker">
+                        <input type="date" id="start_date">
+                        <select id="start_hour"></select>
+                        <span class="datetime-sep">:</span>
+                        <select id="start_min"></select>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="end_time">終了日時</label>
-                    <input type="datetime-local" id="end_time" name="end_time" step="900"
-                        value="{{ task.end_time if task else '' }}">
+                    <label>終了日時</label>
+                    <div class="datetime-picker">
+                        <input type="date" id="end_date">
+                        <select id="end_hour"></select>
+                        <span class="datetime-sep">:</span>
+                        <select id="end_min"></select>
+                    </div>
                 </div>
             </div>
 
@@ -165,6 +202,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const projectId = {{ project.id }};
     const taskData = {{ task | tojson }};
 
+    // Populate hour/minute selects (15-min increments)
+    function populateTimeSelects(hourId, minId, datetimeStr) {
+        const hourEl = document.getElementById(hourId);
+        const minEl = document.getElementById(minId);
+        hourEl.innerHTML = '<option value="">--</option>';
+        minEl.innerHTML = '<option value="">--</option>';
+        for (let h = 0; h < 24; h++) {
+            const opt = document.createElement("option");
+            opt.value = String(h).padStart(2, "0");
+            opt.textContent = String(h).padStart(2, "0");
+            hourEl.appendChild(opt);
+        }
+        for (let m = 0; m < 60; m += 15) {
+            const opt = document.createElement("option");
+            opt.value = String(m).padStart(2, "0");
+            opt.textContent = String(m).padStart(2, "0");
+            minEl.appendChild(opt);
+        }
+        // Parse existing value
+        if (datetimeStr) {
+            const dt = datetimeStr.replace(" ", "T");
+            const dateEl = document.getElementById(hourId.replace("_hour", "_date"));
+            const datePart = dt.split("T")[0];
+            const timePart = dt.split("T")[1] || "";
+            if (datePart) dateEl.value = datePart;
+            if (timePart) {
+                const [hh, mm] = timePart.split(":");
+                hourEl.value = hh || "";
+                // Snap to nearest 15-min
+                const mNum = parseInt(mm) || 0;
+                const snapped = String(Math.round(mNum / 15) * 15 % 60).padStart(2, "0");
+                minEl.value = snapped;
+            }
+        }
+    }
+
+    const startVal = taskData ? (taskData.start_time || "") : "";
+    const endVal = taskData ? (taskData.end_time || "") : "";
+    populateTimeSelects("start_hour", "start_min", startVal);
+    populateTimeSelects("end_hour", "end_min", endVal);
+
+    // Helper: combine date + time selects into ISO string
+    function getDatetime(dateId, hourId, minId) {
+        const d = document.getElementById(dateId).value;
+        const h = document.getElementById(hourId).value;
+        const m = document.getElementById(minId).value;
+        if (!d) return "";
+        if (!h || !m) return d + "T00:00:00";
+        return `${d}T${h}:${m}:00`;
+    }
+
     // Check for parent_id query parameter (for child task creation)
     const urlParams = new URLSearchParams(window.location.search);
     const parentIdParam = urlParams.get("parent_id");
@@ -199,11 +287,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const description = document.getElementById("description").value.trim();
         if (description) body.description = description;
 
-        const startTime = document.getElementById("start_time").value;
-        if (startTime) body.start_time = startTime + ":00";
+        const startTime = getDatetime("start_date", "start_hour", "start_min");
+        if (startTime) body.start_time = startTime;
 
-        const endTime = document.getElementById("end_time").value;
-        if (endTime) body.end_time = endTime + ":00";
+        const endTime = getDatetime("end_date", "end_hour", "end_min");
+        if (endTime) body.end_time = endTime;
 
         const assignedMember = document.getElementById("assigned_member").value.trim();
         if (assignedMember) body.assigned_member = assignedMember;
