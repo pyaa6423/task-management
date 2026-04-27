@@ -1,0 +1,934 @@
+{% extends "base.html" %}
+
+{% block title %}デイリー - Task Management{% endblock %}
+
+{% block head %}
+<style>
+    main { padding: 0; }
+    .dl-wrap {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(420px, 1.4fr);
+        gap: 1rem;
+        padding: 1rem;
+        height: calc(100vh - 70px);
+        box-sizing: border-box;
+    }
+
+    /* Header bar */
+    .dl-header {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e60012;
+    }
+    .dl-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #333;
+    }
+    .dl-date-input {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.95rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        outline: none;
+        font-weight: 600;
+        color: #333;
+    }
+    .dl-date-input:focus { border-color: #e60012; }
+    .dl-nav-btn {
+        background: #fff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .dl-nav-btn:hover { background: #e60012; color: #fff; }
+    .dl-save-status {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: #888;
+        font-weight: 600;
+    }
+    .dl-save-status.saved { color: #0ab44a; }
+    .dl-save-status.saving { color: #0068b7; }
+
+    /* Layout */
+    .dl-wrap {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        grid-template-columns: minmax(320px, 1fr) minmax(480px, 1.4fr);
+        gap: 1rem;
+        padding: 1rem;
+        height: calc(100vh - 80px);
+        box-sizing: border-box;
+    }
+
+    /* Note panel */
+    .dl-note-panel {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .dl-panel-header {
+        background: #fafafa;
+        border-bottom: 1px solid #e8e8e8;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .dl-panel-header .dl-tab {
+        background: transparent;
+        border: none;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #999;
+        cursor: pointer;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+    .dl-panel-header .dl-tab.active {
+        color: #e60012;
+        background: #fff5f5;
+    }
+    .dl-note-body {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+    .dl-note-textarea {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        padding: 1rem;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: none;
+        box-sizing: border-box;
+        background: #fff;
+        color: #333;
+    }
+    .dl-note-preview {
+        width: 100%;
+        height: 100%;
+        padding: 1rem;
+        box-sizing: border-box;
+        overflow-y: auto;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        color: #333;
+    }
+    .dl-note-preview h1, .dl-note-preview h2, .dl-note-preview h3 {
+        color: #e60012;
+        margin: 0.6rem 0 0.4rem;
+    }
+    .dl-note-preview h1 { font-size: 1.3rem; border-bottom: 2px solid #e60012; padding-bottom: 0.2rem; }
+    .dl-note-preview h2 { font-size: 1.1rem; }
+    .dl-note-preview h3 { font-size: 1rem; }
+    .dl-note-preview ul { padding-left: 1.4rem; }
+    .dl-note-preview code {
+        background: #f4f4f4;
+        padding: 0.05rem 0.3rem;
+        border-radius: 3px;
+        font-size: 0.85em;
+    }
+    .dl-note-preview pre {
+        background: #f4f4f4;
+        padding: 0.6rem;
+        border-radius: 6px;
+        overflow-x: auto;
+    }
+    .dl-note-preview blockquote {
+        border-left: 4px solid #e60012;
+        margin: 0.5rem 0;
+        padding: 0.2rem 0.8rem;
+        color: #666;
+    }
+    .dl-note-preview a { color: #0068b7; }
+
+    /* Timeline panel */
+    .dl-tl-panel {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .dl-tl-toolbar {
+        background: #fafafa;
+        border-bottom: 1px solid #e8e8e8;
+        padding: 0.4rem 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.8rem;
+    }
+    .dl-tl-toolbar label {
+        font-weight: 600;
+        color: #555;
+    }
+    .dl-legend {
+        display: flex;
+        gap: 0.7rem;
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: #555;
+    }
+    .dl-legend-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 0.25rem;
+        vertical-align: middle;
+    }
+    .dl-tl-scroll {
+        flex: 1;
+        overflow-y: auto;
+        position: relative;
+    }
+    /* Timeline grid */
+    .dl-tl {
+        position: relative;
+        /* 96 slots × 24px = 2304px (15-min slots × 24h) */
+        height: 2304px;
+        margin-left: 50px; /* gutter for hour labels */
+    }
+    .dl-tl-hour {
+        position: absolute;
+        left: -50px;
+        width: 50px;
+        font-size: 0.7rem;
+        color: #888;
+        text-align: right;
+        padding-right: 6px;
+        box-sizing: border-box;
+        font-weight: 600;
+    }
+
+    .dl-col-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        height: 100%;
+    }
+    .dl-col {
+        position: relative;
+        height: 100%;
+        background-color: #fdfdfd;
+        background-image:
+            linear-gradient(to bottom, #c9c9c9 1px, transparent 1px),
+            linear-gradient(to bottom, #ececec 1px, transparent 1px);
+        background-size: 100% 96px, 100% 24px;
+        background-position: 0 0, 0 0;
+        border-radius: 4px;
+        cursor: crosshair;
+    }
+    .dl-col:hover {
+        background-color: #fafafa;
+    }
+    .dl-col-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #484848;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px 4px 0 0;
+        text-align: center;
+    }
+    .dl-col-plan .dl-col-header { background: #0068b7; }
+    .dl-col-actual .dl-col-header { background: #e60012; }
+
+    /* Time entry block */
+    .dl-block {
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        background: #0068b7;
+        color: #fff;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.78rem;
+        line-height: 1.3;
+        box-sizing: border-box;
+        cursor: move;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        user-select: none;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    .dl-block:hover { filter: brightness(1.05); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+    .dl-block.actual { background: #e60012; }
+    .dl-block-time { font-size: 0.7rem; opacity: 0.9; font-weight: 700; }
+    .dl-block-title { font-weight: 700; word-break: break-word; }
+    .dl-block-resize {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 6px;
+        cursor: ns-resize;
+    }
+    .dl-block-resize.top { top: 0; }
+    .dl-block-resize.bottom { bottom: 0; }
+    .dl-block-del {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        background: rgba(0,0,0,0.25);
+        border: none;
+        color: #fff;
+        font-size: 0.75rem;
+        line-height: 1;
+        padding: 2px 5px;
+        border-radius: 3px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+    .dl-block:hover .dl-block-del { opacity: 1; }
+
+    /* Modal */
+    .dl-modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+    }
+    .dl-modal-bg.show { display: flex; }
+    .dl-modal {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.25rem;
+        width: 360px;
+        max-width: 90vw;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .dl-modal h3 {
+        margin: 0 0 0.8rem;
+        font-size: 1rem;
+        color: #e60012;
+    }
+    .dl-modal label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 0.2rem;
+    }
+    .dl-modal input,
+    .dl-modal select,
+    .dl-modal textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        outline: none;
+        margin-bottom: 0.7rem;
+    }
+    .dl-modal input:focus, .dl-modal select:focus, .dl-modal textarea:focus {
+        border-color: #e60012;
+    }
+    .dl-modal-row {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .dl-modal-row > div { flex: 1; }
+    .dl-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .dl-btn {
+        padding: 0.45rem 1rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    .dl-btn-primary { background: #e60012; color: #fff; border-color: #e60012; }
+    .dl-btn-primary:hover { background: #c4000f; border-color: #c4000f; }
+    .dl-btn-cancel { background: #fff; color: #888; border-color: #ccc; }
+    .dl-btn-cancel:hover { color: #555; border-color: #888; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dl-wrap">
+    <div class="dl-header">
+        <span class="dl-title">デイリー</span>
+        <button class="dl-nav-btn" id="dl-prev">◀ 前日</button>
+        <input type="date" id="dl-date" class="dl-date-input" value="{{ target_date }}">
+        <button class="dl-nav-btn" id="dl-next">翌日 ▶</button>
+        <button class="dl-nav-btn" id="dl-today">今日</button>
+        <span class="dl-save-status" id="dl-save-status"></span>
+    </div>
+
+    <!-- Left: Markdown note -->
+    <div class="dl-note-panel">
+        <div class="dl-panel-header">
+            <span>メモ</span>
+            <button class="dl-tab active" data-mode="edit">編集</button>
+            <button class="dl-tab" data-mode="preview">プレビュー</button>
+        </div>
+        <div class="dl-note-body">
+            <textarea id="dl-note" class="dl-note-textarea" placeholder="今日のメモ（Markdown対応）&#10;&#10;# 見出し&#10;- 箇条書き&#10;- [ ] チェックリスト&#10;> 引用&#10;`コード`"></textarea>
+            <div id="dl-preview" class="dl-note-preview" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Right: Timeline -->
+    <div class="dl-tl-panel">
+        <div class="dl-tl-toolbar">
+            <span>クリックでブロック作成・ドラッグで移動・端をドラッグでリサイズ</span>
+            <div class="dl-legend">
+                <span><span class="dl-legend-dot" style="background:#0068b7;"></span>予定</span>
+                <span><span class="dl-legend-dot" style="background:#e60012;"></span>実績</span>
+            </div>
+        </div>
+        <div class="dl-tl-scroll" id="dl-tl-scroll">
+            <div class="dl-tl" id="dl-tl">
+                <!-- hour labels & lines injected by JS -->
+                <div class="dl-col-wrap">
+                    <div class="dl-col dl-col-plan" data-kind="plan"></div>
+                    <div class="dl-col dl-col-actual" data-kind="actual"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit modal -->
+<div class="dl-modal-bg" id="dl-modal-bg">
+    <div class="dl-modal" id="dl-modal">
+        <h3 id="dl-modal-title">ブロックを編集</h3>
+        <label>タイトル</label>
+        <input type="text" id="dl-m-title" placeholder="作業内容">
+        <div class="dl-modal-row">
+            <div>
+                <label>開始</label>
+                <input type="time" id="dl-m-start" step="900">
+            </div>
+            <div>
+                <label>終了</label>
+                <input type="time" id="dl-m-end" step="900">
+            </div>
+        </div>
+        <div class="dl-modal-row">
+            <div>
+                <label>種別</label>
+                <select id="dl-m-kind">
+                    <option value="plan">予定</option>
+                    <option value="actual">実績</option>
+                </select>
+            </div>
+            <div>
+                <label>色</label>
+                <input type="color" id="dl-m-color" value="#0068b7">
+            </div>
+        </div>
+        <label>プロジェクト</label>
+        <select id="dl-m-project">
+            <option value="">（なし）</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+        </select>
+        <label>メモ</label>
+        <textarea id="dl-m-note" rows="2"></textarea>
+        <div class="dl-modal-actions">
+            <button class="dl-btn dl-btn-cancel" id="dl-m-delete" style="margin-right:auto; color:#e60012; border-color:#e60012;">削除</button>
+            <button class="dl-btn dl-btn-cancel" id="dl-m-cancel">キャンセル</button>
+            <button class="dl-btn dl-btn-primary" id="dl-m-save">保存</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const SLOT_MIN = 15;             // 15-minute slots
+    const SLOT_PX = 24;              // each slot height
+    const MIN_PER_DAY = 24 * 60;
+    const TOTAL_PX = (MIN_PER_DAY / SLOT_MIN) * SLOT_PX;
+
+    const dateInput = document.getElementById("dl-date");
+    const noteEl = document.getElementById("dl-note");
+    const previewEl = document.getElementById("dl-preview");
+    const saveStatus = document.getElementById("dl-save-status");
+    const tlEl = document.getElementById("dl-tl");
+    const colPlan = tlEl.querySelector('.dl-col-plan');
+    const colActual = tlEl.querySelector('.dl-col-actual');
+    const modalBg = document.getElementById("dl-modal-bg");
+
+    let currentDate = dateInput.value;
+    let entries = [];
+    let editingId = null;        // null when creating
+    let draftEntry = null;       // pending entry for create
+    let noteSaveTimer = null;
+
+    // ---------------- Hour labels ----------------
+    function buildHourLabels() {
+        tlEl.querySelectorAll('.dl-tl-hour').forEach(n => n.remove());
+        const wrap = tlEl.querySelector('.dl-col-wrap');
+        for (let h = 0; h < 24; h++) {
+            const label = document.createElement('div');
+            label.className = 'dl-tl-hour';
+            label.textContent = `${String(h).padStart(2, '0')}:00`;
+            label.style.top = `${h * 4 * SLOT_PX}px`;
+            tlEl.insertBefore(label, wrap);
+        }
+    }
+    buildHourLabels();
+
+    // ---------------- Helpers ----------------
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function minutesFromY(y) {
+        // snap to slot
+        const slot = Math.max(0, Math.min((MIN_PER_DAY / SLOT_MIN) - 1, Math.round(y / SLOT_PX)));
+        return slot * SLOT_MIN;
+    }
+    function yFromMinutes(min) { return (min / SLOT_MIN) * SLOT_PX; }
+
+    function isoFromMinutes(dateStr, mins) {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        // local time → ISO with offset stripped (server stores naive-ish)
+        return `${dateStr}T${pad(h)}:${pad(m)}:00`;
+    }
+    function timeStr(iso) {
+        // Accept "YYYY-MM-DDTHH:MM[:SS]"
+        const m = iso.match(/T(\d{2}):(\d{2})/);
+        return m ? `${m[1]}:${m[2]}` : '';
+    }
+    function minsFromIso(iso) {
+        const m = iso.match(/T(\d{2}):(\d{2})/);
+        if (!m) return 0;
+        return parseInt(m[1]) * 60 + parseInt(m[2]);
+    }
+    function escHtml(s) {
+        if (s == null) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    // ---------------- Markdown (tiny) ----------------
+    function renderMarkdown(src) {
+        if (!src) return '<p style="color:#aaa;">（メモは空です）</p>';
+        let s = escHtml(src);
+        // code blocks
+        s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre><code>${c}</code></pre>`);
+        // headings
+        s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>')
+             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+             .replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        // blockquote (escHtml converted "> " into "&gt; ")
+        s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+        // checklist
+        s = s.replace(/^- \[ \] (.+)$/gm, '<li><input type="checkbox" disabled> $1</li>')
+             .replace(/^- \[x\] (.+)$/gim, '<li><input type="checkbox" checked disabled> $1</li>');
+        // bullet
+        s = s.replace(/^- (.+)$/gm, '<li>$1</li>');
+        // wrap consecutive <li>
+        s = s.replace(/(<li>[\s\S]+?<\/li>)(?!\s*<li>)/g, '<ul>$1</ul>');
+        // bold/italic/code
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+             .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+             .replace(/`([^`]+)`/g, '<code>$1</code>');
+        // line breaks
+        s = s.replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
+        return `<p>${s}</p>`;
+    }
+
+    // ---------------- Tabs ----------------
+    document.querySelectorAll('.dl-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.dl-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (btn.dataset.mode === 'preview') {
+                previewEl.innerHTML = renderMarkdown(noteEl.value);
+                noteEl.style.display = 'none';
+                previewEl.style.display = 'block';
+            } else {
+                noteEl.style.display = 'block';
+                previewEl.style.display = 'none';
+            }
+        });
+    });
+
+    // ---------------- Date navigation ----------------
+    function shiftDate(days) {
+        const d = new Date(currentDate + 'T00:00:00');
+        d.setDate(d.getDate() + days);
+        const s = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        dateInput.value = s;
+        currentDate = s;
+        loadAll();
+    }
+    document.getElementById('dl-prev').addEventListener('click', () => shiftDate(-1));
+    document.getElementById('dl-next').addEventListener('click', () => shiftDate(1));
+    document.getElementById('dl-today').addEventListener('click', () => {
+        const d = new Date();
+        const s = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        dateInput.value = s;
+        currentDate = s;
+        loadAll();
+    });
+    dateInput.addEventListener('change', () => {
+        currentDate = dateInput.value;
+        loadAll();
+    });
+
+    // ---------------- Load / save note ----------------
+    async function loadNote() {
+        const r = await fetch(`/api/v1/daily/notes/${currentDate}`);
+        if (!r.ok) { noteEl.value = ''; return; }
+        const d = await r.json();
+        noteEl.value = d.body || '';
+        if (previewEl.style.display === 'block') {
+            previewEl.innerHTML = renderMarkdown(noteEl.value);
+        }
+    }
+    function setStatus(text, cls) {
+        saveStatus.textContent = text;
+        saveStatus.className = 'dl-save-status' + (cls ? ' ' + cls : '');
+    }
+    async function saveNoteNow() {
+        setStatus('保存中…', 'saving');
+        try {
+            const r = await fetch(`/api/v1/daily/notes/${currentDate}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body: noteEl.value }),
+            });
+            if (!r.ok) { setStatus('保存失敗'); return; }
+            setStatus('保存しました ✓', 'saved');
+            setTimeout(() => { if (saveStatus.textContent.startsWith('保存しました')) setStatus(''); }, 1500);
+        } catch { setStatus('通信エラー'); }
+    }
+    noteEl.addEventListener('input', () => {
+        setStatus('編集中…');
+        clearTimeout(noteSaveTimer);
+        noteSaveTimer = setTimeout(saveNoteNow, 800);
+    });
+
+    // ---------------- Load entries ----------------
+    async function loadEntries() {
+        const r = await fetch(`/api/v1/daily/entries?entry_date=${currentDate}`);
+        if (!r.ok) { entries = []; renderBlocks(); return; }
+        entries = await r.json();
+        renderBlocks();
+    }
+
+    function renderBlocks() {
+        // clear existing
+        colPlan.querySelectorAll('.dl-block').forEach(n => n.remove());
+        colActual.querySelectorAll('.dl-block').forEach(n => n.remove());
+        for (const e of entries) {
+            const col = e.kind === 'actual' ? colActual : colPlan;
+            const block = makeBlock(e);
+            col.appendChild(block);
+        }
+    }
+
+    function makeBlock(e) {
+        const startMin = minsFromIso(e.start_at);
+        const endMin = minsFromIso(e.end_at);
+        const top = yFromMinutes(startMin);
+        const h = Math.max(SLOT_PX, yFromMinutes(endMin - startMin));
+        const div = document.createElement('div');
+        div.className = 'dl-block' + (e.kind === 'actual' ? ' actual' : '');
+        div.style.top = `${top}px`;
+        div.style.height = `${h}px`;
+        if (e.color) div.style.background = e.color;
+        div.dataset.id = e.id;
+        div.innerHTML = `
+            <div class="dl-block-time">${timeStr(e.start_at)}–${timeStr(e.end_at)}</div>
+            <div class="dl-block-title">${escHtml(e.title || '(無題)')}</div>
+            <button class="dl-block-del" title="削除">×</button>
+            <div class="dl-block-resize top"></div>
+            <div class="dl-block-resize bottom"></div>
+        `;
+        bindBlockInteractions(div, e);
+        return div;
+    }
+
+    // ---------------- Drag / resize / click ----------------
+    function bindBlockInteractions(div, e) {
+        const delBtn = div.querySelector('.dl-block-del');
+        delBtn.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            if (!confirm('このブロックを削除しますか？')) return;
+            await fetch(`/api/v1/daily/entries/${e.id}`, { method: 'DELETE' });
+            entries = entries.filter(x => x.id !== e.id);
+            renderBlocks();
+        });
+
+        const topHandle = div.querySelector('.dl-block-resize.top');
+        const botHandle = div.querySelector('.dl-block-resize.bottom');
+
+        let dragMode = null;     // 'move' | 'resize-top' | 'resize-bottom'
+        let dragStartY = 0;
+        let origTop = 0;
+        let origHeight = 0;
+        let didDrag = false;
+
+        const onMouseMove = (mv) => {
+            const dy = mv.clientY - dragStartY;
+            if (Math.abs(dy) > 2) didDrag = true;
+            if (dragMode === 'move') {
+                let newTop = origTop + dy;
+                newTop = Math.max(0, Math.min(TOTAL_PX - origHeight, newTop));
+                // snap
+                newTop = Math.round(newTop / SLOT_PX) * SLOT_PX;
+                div.style.top = `${newTop}px`;
+            } else if (dragMode === 'resize-top') {
+                let newTop = origTop + dy;
+                newTop = Math.max(0, Math.min(origTop + origHeight - SLOT_PX, newTop));
+                newTop = Math.round(newTop / SLOT_PX) * SLOT_PX;
+                const newH = origTop + origHeight - newTop;
+                div.style.top = `${newTop}px`;
+                div.style.height = `${newH}px`;
+            } else if (dragMode === 'resize-bottom') {
+                let newH = origHeight + dy;
+                newH = Math.max(SLOT_PX, Math.min(TOTAL_PX - origTop, newH));
+                newH = Math.round(newH / SLOT_PX) * SLOT_PX;
+                div.style.height = `${newH}px`;
+            }
+            // live time label
+            const t = parseInt(div.style.top);
+            const h2 = parseInt(div.style.height);
+            const sM = minutesFromY(t);
+            const eM = minutesFromY(t + h2);
+            div.querySelector('.dl-block-time').textContent =
+                `${pad(Math.floor(sM/60))}:${pad(sM%60)}–${pad(Math.floor(eM/60))}:${pad(eM%60)}`;
+        };
+        const onMouseUp = async () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            if (didDrag) {
+                const t = parseInt(div.style.top);
+                const h2 = parseInt(div.style.height);
+                const sMin = minutesFromY(t);
+                const eMin = minutesFromY(t + h2);
+                const body = {
+                    start_at: isoFromMinutes(currentDate, sMin),
+                    end_at: isoFromMinutes(currentDate, Math.max(eMin, sMin + SLOT_MIN)),
+                };
+                const r = await fetch(`/api/v1/daily/entries/${e.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (r.ok) {
+                    const updated = await r.json();
+                    const idx = entries.findIndex(x => x.id === e.id);
+                    if (idx >= 0) entries[idx] = updated;
+                    renderBlocks();
+                }
+            } else {
+                // click → open editor
+                openModal(e);
+            }
+            dragMode = null;
+            didDrag = false;
+        };
+
+        div.addEventListener('mousedown', (md) => {
+            if (md.target === delBtn || md.target === topHandle || md.target === botHandle) return;
+            md.preventDefault();
+            md.stopPropagation();
+            dragMode = 'move';
+            dragStartY = md.clientY;
+            origTop = parseInt(div.style.top);
+            origHeight = parseInt(div.style.height);
+            didDrag = false;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        topHandle.addEventListener('mousedown', (md) => {
+            md.preventDefault();
+            md.stopPropagation();
+            dragMode = 'resize-top';
+            dragStartY = md.clientY;
+            origTop = parseInt(div.style.top);
+            origHeight = parseInt(div.style.height);
+            didDrag = true;  // mark to ensure we save
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        botHandle.addEventListener('mousedown', (md) => {
+            md.preventDefault();
+            md.stopPropagation();
+            dragMode = 'resize-bottom';
+            dragStartY = md.clientY;
+            origTop = parseInt(div.style.top);
+            origHeight = parseInt(div.style.height);
+            didDrag = true;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    // Click empty area to create
+    function bindColumnCreate(col, kind) {
+        let downY = null;
+        let dragRect = null;
+        col.addEventListener('mousedown', (e) => {
+            if (e.target !== col) return;
+            const rect = col.getBoundingClientRect();
+            downY = e.clientY - rect.top;
+            dragRect = document.createElement('div');
+            dragRect.className = 'dl-block' + (kind === 'actual' ? ' actual' : '');
+            dragRect.style.opacity = '0.5';
+            dragRect.style.top = `${Math.round(downY / SLOT_PX) * SLOT_PX}px`;
+            dragRect.style.height = `${SLOT_PX}px`;
+            col.appendChild(dragRect);
+
+            const onMove = (mv) => {
+                const y = mv.clientY - rect.top;
+                const top = Math.min(downY, y);
+                const bot = Math.max(downY, y);
+                const snapTop = Math.round(top / SLOT_PX) * SLOT_PX;
+                const snapH = Math.max(SLOT_PX, Math.round((bot - top) / SLOT_PX) * SLOT_PX);
+                dragRect.style.top = `${snapTop}px`;
+                dragRect.style.height = `${snapH}px`;
+            };
+            const onUp = (uv) => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                const top = parseInt(dragRect.style.top);
+                const h = parseInt(dragRect.style.height);
+                dragRect.remove();
+                dragRect = null;
+                const sMin = minutesFromY(top);
+                let eMin = minutesFromY(top + h);
+                if (eMin <= sMin) eMin = sMin + SLOT_MIN;
+                draftEntry = {
+                    kind,
+                    entry_date: currentDate,
+                    start_at: isoFromMinutes(currentDate, sMin),
+                    end_at: isoFromMinutes(currentDate, eMin),
+                    title: '',
+                    color: kind === 'actual' ? '#e60012' : '#0068b7',
+                    project_id: null,
+                    note: '',
+                };
+                openModal(null);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+    bindColumnCreate(colPlan, 'plan');
+    bindColumnCreate(colActual, 'actual');
+
+    // ---------------- Modal ----------------
+    function openModal(entry) {
+        editingId = entry ? entry.id : null;
+        const e = entry || draftEntry;
+        document.getElementById('dl-modal-title').textContent =
+            editingId ? 'ブロックを編集' : 'ブロックを作成';
+        document.getElementById('dl-m-title').value = e.title || '';
+        document.getElementById('dl-m-start').value = timeStr(e.start_at);
+        document.getElementById('dl-m-end').value = timeStr(e.end_at);
+        document.getElementById('dl-m-kind').value = e.kind;
+        document.getElementById('dl-m-color').value = e.color || (e.kind === 'actual' ? '#e60012' : '#0068b7');
+        document.getElementById('dl-m-project').value = e.project_id || '';
+        document.getElementById('dl-m-note').value = e.note || '';
+        document.getElementById('dl-m-delete').style.display = editingId ? 'inline-block' : 'none';
+        modalBg.classList.add('show');
+        setTimeout(() => document.getElementById('dl-m-title').focus(), 50);
+    }
+    function closeModal() {
+        modalBg.classList.remove('show');
+        editingId = null;
+        draftEntry = null;
+    }
+    document.getElementById('dl-m-cancel').addEventListener('click', closeModal);
+    modalBg.addEventListener('click', (e) => { if (e.target === modalBg) closeModal(); });
+
+    document.getElementById('dl-m-save').addEventListener('click', async () => {
+        const title = document.getElementById('dl-m-title').value.trim() || '(無題)';
+        const startT = document.getElementById('dl-m-start').value;
+        const endT = document.getElementById('dl-m-end').value;
+        const kind = document.getElementById('dl-m-kind').value;
+        const color = document.getElementById('dl-m-color').value;
+        const projectId = document.getElementById('dl-m-project').value || null;
+        const note = document.getElementById('dl-m-note').value || null;
+        if (!startT || !endT) { alert('開始・終了時刻が必要です'); return; }
+        const sIso = `${currentDate}T${startT}:00`;
+        const eIso = `${currentDate}T${endT}:00`;
+        if (eIso <= sIso) { alert('終了は開始より後にしてください'); return; }
+        const body = {
+            entry_date: currentDate,
+            start_at: sIso,
+            end_at: eIso,
+            title,
+            kind,
+            color,
+            note,
+            project_id: projectId ? parseInt(projectId) : null,
+        };
+        let r;
+        if (editingId) {
+            r = await fetch(`/api/v1/daily/entries/${editingId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+        } else {
+            r = await fetch(`/api/v1/daily/entries`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+        }
+        if (!r.ok) { alert('保存に失敗しました'); return; }
+        closeModal();
+        await loadEntries();
+    });
+
+    document.getElementById('dl-m-delete').addEventListener('click', async () => {
+        if (!editingId) return;
+        if (!confirm('このブロックを削除しますか？')) return;
+        await fetch(`/api/v1/daily/entries/${editingId}`, { method: 'DELETE' });
+        closeModal();
+        await loadEntries();
+    });
+
+    // ---------------- Init ----------------
+    function loadAll() { loadNote(); loadEntries(); }
+    loadAll();
+    // Scroll to 8:00 by default
+    setTimeout(() => {
+        document.getElementById('dl-tl-scroll').scrollTop = yFromMinutes(8 * 60);
+    }, 100);
+})();
+</script>
+{% endblock %}

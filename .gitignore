@@ -40,3 +40,10 @@ coverage.xml
 # OS
 .DS_Store
 Thumbs.db
+
+# Local tooling / scratch
+.claude/
+.mcp.json
+.playwright-mcp/
+backup.json
+*.png

@@ -956,6 +956,26 @@ div.details-container,
     color: #fff;
 }
 
+/* ── +子タスク button on the parent panel red header ── */
+.expand-panel-add-child {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    padding: 0.22rem 0.55rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+    transition: all 0.15s;
+}
+.expand-panel-add-child:hover {
+    background: #fff;
+    color: #e60012;
+    border-color: #fff;
+}
+
 /* ── Shared form styles (used across checks, task_form, project_form, events) ── */
 .back-link {
     display: inline-flex;

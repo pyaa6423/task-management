@@ -739,7 +739,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (visibleTasks.length === 0 && hiddenCompleted.length === 0) {
-            container.innerHTML = '<p class="placeholder">タスクがありません</p>';
+            container.innerHTML = "";
+            const msg = document.createElement("p");
+            msg.className = "placeholder";
+            msg.textContent = "タスクがありません";
+            container.appendChild(msg);
+            if (currentProjectId) {
+                const addBar = document.createElement("div");
+                addBar.className = "add-task-bar";
+                const addBtn = document.createElement("a");
+                addBtn.href = `/projects/${currentProjectId}/tasks/new`;
+                addBtn.className = "add-task-btn";
+                addBtn.textContent = "＋ タスクを追加";
+                addBar.appendChild(addBtn);
+                container.appendChild(addBar);
+            }
             ganttChart = null;
             return;
         }
@@ -919,6 +933,15 @@ document.addEventListener("DOMContentLoaded", () => {
         header.appendChild(titleArea);
         header.appendChild(headerMeta);
         header.appendChild(progressEl);
+
+        // +子タスク button on the red header (so it doesn't disappear when a leaf becomes a parent)
+        const addChildBtn = createActionLink(
+            "expand-panel-add-child",
+            `/projects/${currentProjectId}/tasks/new?parent_id=${taskId}`,
+            "＋子タスク",
+            "子タスクを追加"
+        );
+        header.appendChild(addChildBtn);
         panel.appendChild(header);
 
         // Progress bar
@@ -930,6 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pfill.style.background = color.bar;
         pbar.appendChild(pfill);
         panel.appendChild(pbar);
+
 
         // Sort children by end date (earliest first)
         children.sort((a, b) => {
