@@ -11,6 +11,8 @@ from app.schemas.daily import (
     TimeEntryResponse,
     DailyNoteUpsert,
     DailyNoteResponse,
+    DailyTaskCreate,
+    DailyTaskResponse,
 )
 from app.services import daily_service
 from app.models.project import Project
@@ -86,3 +88,26 @@ async def update_entry(
 @router.delete("/api/v1/daily/entries/{entry_id}", status_code=204)
 async def delete_entry(entry_id: int, db: AsyncSession = Depends(get_db)):
     await daily_service.delete_entry(db, entry_id)
+
+
+# ---- DailyTask API (today's task list) ----
+
+@router.get("/api/v1/daily/tasks", response_model=list[DailyTaskResponse])
+async def list_daily_tasks(
+    daily_date: Date = Query(..., description="YYYY-MM-DD"),
+    db: AsyncSession = Depends(get_db),
+):
+    return await daily_service.list_daily_tasks(db, daily_date=daily_date)
+
+
+@router.post("/api/v1/daily/tasks", response_model=DailyTaskResponse, status_code=201)
+async def add_daily_task(
+    data: DailyTaskCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await daily_service.add_daily_task(db, data)
+
+
+@router.delete("/api/v1/daily/tasks/{daily_task_id}", status_code=204)
+async def remove_daily_task(daily_task_id: int, db: AsyncSession = Depends(get_db)):
+    await daily_service.remove_daily_task(db, daily_task_id)

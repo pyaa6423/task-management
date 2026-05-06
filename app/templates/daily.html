@@ -61,12 +61,121 @@
     /* Layout */
     .dl-wrap {
         display: grid;
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto auto 1fr;
         grid-template-columns: minmax(320px, 1fr) minmax(480px, 1.4fr);
         gap: 1rem;
         padding: 1rem;
         height: calc(100vh - 80px);
         box-sizing: border-box;
+    }
+
+    /* Today's tasks bar (full width row between header and main) */
+    .dl-tasks-bar {
+        grid-column: 1 / -1;
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-left: 6px solid #e60012;
+        border-radius: 8px;
+        padding: 0.55rem 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .dl-tasks-bar-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #333;
+        margin-right: 0.4rem;
+        flex-shrink: 0;
+    }
+    .dl-tasks-bar-count {
+        background: #fff5f5;
+        color: #e60012;
+        border: 1px solid #fcc;
+        border-radius: 10px;
+        padding: 0.05rem 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-left: 0.2rem;
+    }
+    .dl-task-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fafafa;
+        border: 1.5px solid #e0e0e0;
+        border-radius: 16px;
+        padding: 0.2rem 0.65rem 0.2rem 0.4rem;
+        font-size: 0.82rem;
+        max-width: 280px;
+    }
+    .dl-task-chip.done {
+        background: #f0f9f3;
+        border-color: #cde9d5;
+        color: #888;
+    }
+    .dl-task-chip.done .dl-task-chip-title {
+        text-decoration: line-through;
+        color: #888;
+    }
+    .dl-task-chip-check {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #aaa;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #fff;
+        position: relative;
+    }
+    .dl-task-chip-check:checked {
+        background: #1e7e34;
+        border-color: #1e7e34;
+    }
+    .dl-task-chip-check:checked::after {
+        content: "✓";
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .dl-task-chip-title {
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+    }
+    .dl-task-chip-title:hover { color: #e60012; }
+    .dl-task-chip-prj {
+        font-size: 0.68rem;
+        color: #999;
+        background: #f0f0f0;
+        padding: 0.05rem 0.4rem;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+    .dl-task-chip-remove {
+        background: transparent;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0 2px;
+        margin-left: 0.1rem;
+    }
+    .dl-task-chip-remove:hover { color: #e60012; }
+    .dl-tasks-empty {
+        font-size: 0.78rem;
+        color: #999;
+        font-style: italic;
     }
 
     /* Note panel */
@@ -386,6 +495,11 @@
         <button class="dl-nav-btn" id="dl-next">翌日 ▶</button>
         <button class="dl-nav-btn" id="dl-today">今日</button>
         <span class="dl-save-status" id="dl-save-status"></span>
+    </div>
+
+    <div class="dl-tasks-bar">
+        <span class="dl-tasks-bar-label">今日のタスク <span class="dl-tasks-bar-count" id="dl-tasks-count">0</span></span>
+        <div id="dl-tasks-list" style="display: contents;"></div>
     </div>
 
     <!-- Left: Markdown note -->
@@ -922,8 +1036,67 @@
         await loadEntries();
     });
 
+    // ---------------- Today's tasks ----------------
+    const tasksListEl = document.getElementById('dl-tasks-list');
+    const tasksCountEl = document.getElementById('dl-tasks-count');
+    let dailyTasks = [];
+
+    async function loadDailyTasks() {
+        const r = await fetch(`/api/v1/daily/tasks?daily_date=${currentDate}`);
+        dailyTasks = r.ok ? await r.json() : [];
+        renderDailyTasks();
+    }
+
+    function renderDailyTasks() {
+        tasksListEl.innerHTML = '';
+        tasksCountEl.textContent = String(dailyTasks.length);
+        if (dailyTasks.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'dl-tasks-empty';
+            empty.textContent = 'ガントチャートのカードから「📅 今日に追加」で登録できます';
+            tasksListEl.appendChild(empty);
+            return;
+        }
+        for (const dt of dailyTasks) {
+            const chip = document.createElement('span');
+            chip.className = 'dl-task-chip' + (dt.task_is_completed ? ' done' : '');
+            const title = escHtml(dt.task_title);
+            const prj = escHtml(dt.project_name);
+            chip.innerHTML = `
+                <input type="checkbox" class="dl-task-chip-check" ${dt.task_is_completed ? 'checked' : ''} title="完了をトグル">
+                <a class="dl-task-chip-title" href="/tasks/${dt.task_id}/edit" title="${title}">${title}</a>
+                <span class="dl-task-chip-prj">${prj}</span>
+                <button class="dl-task-chip-remove" title="今日のタスクから外す">×</button>
+            `;
+            const checkbox = chip.querySelector('.dl-task-chip-check');
+            checkbox.addEventListener('change', async () => {
+                const newCompleted = checkbox.checked;
+                const r2 = await fetch(`/api/v1/tasks/${dt.task_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_completed: newCompleted }),
+                });
+                if (!r2.ok) {
+                    const err = await r2.json().catch(() => ({}));
+                    alert(err.detail || '更新に失敗しました');
+                    checkbox.checked = !newCompleted;
+                    return;
+                }
+                dt.task_is_completed = newCompleted;
+                renderDailyTasks();
+            });
+            chip.querySelector('.dl-task-chip-remove').addEventListener('click', async () => {
+                const r2 = await fetch(`/api/v1/daily/tasks/${dt.id}`, { method: 'DELETE' });
+                if (!r2.ok) { alert('削除に失敗しました'); return; }
+                dailyTasks = dailyTasks.filter(x => x.id !== dt.id);
+                renderDailyTasks();
+            });
+            tasksListEl.appendChild(chip);
+        }
+    }
+
     // ---------------- Init ----------------
-    function loadAll() { loadNote(); loadEntries(); }
+    function loadAll() { loadNote(); loadEntries(); loadDailyTasks(); }
     loadAll();
     // Scroll to 8:00 by default
     setTimeout(() => {

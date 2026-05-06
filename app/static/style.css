@@ -956,6 +956,30 @@ div.details-container,
     color: #fff;
 }
 
+/* "📅 今日" button — uses the same look as action links but as a <button> */
+button.expand-card-checks-link,
+button.leaf-card-checks-link,
+button.expand-panel-add-child {
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.2;
+}
+button.expand-panel-add-child {
+    background: rgba(255, 255, 255, 0.0);
+}
+button.expand-card-checks-link.today-btn:hover,
+button.leaf-card-checks-link.today-btn:hover {
+    background: #e60012;
+    color: #fff;
+}
+button.expand-card-checks-link:disabled,
+button.leaf-card-checks-link:disabled,
+button.expand-panel-add-child:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
 /* ── +子タスク button on the parent panel red header ── */
 .expand-panel-add-child {
     font-size: 0.7rem;

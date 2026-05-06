@@ -82,6 +82,46 @@ document.addEventListener("DOMContentLoaded", () => {
     function stopPropagation(e) { e.stopPropagation(); }
     const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
+    // ── Helper: "📅 今日" button — adds a task to today's daily list ──
+    function todayDateStr() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function createTodayBtn(className, taskId) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = className + " today-btn";
+        btn.textContent = "📅 今日";
+        btn.title = "今日のデイリータスクに追加";
+        btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const orig = btn.textContent;
+            btn.disabled = true;
+            try {
+                const r = await fetch("/api/v1/daily/tasks", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ daily_date: todayDateStr(), task_id: parseInt(taskId) }),
+                });
+                if (!r.ok) {
+                    const err = await r.json().catch(() => ({}));
+                    alert(err.detail || "追加に失敗しました");
+                    btn.disabled = false;
+                    btn.textContent = orig;
+                    return;
+                }
+                btn.textContent = "✓ 追加済み";
+                setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 1500);
+            } catch (err) {
+                alert("通信エラーが発生しました");
+                btn.disabled = false;
+                btn.textContent = orig;
+            }
+        });
+        return btn;
+    }
+
     // ── Event overlay lines ──
     async function addEventOverlays(ganttEl, projectId) {
         const svg = ganttEl.querySelector("svg.gantt");
@@ -934,7 +974,8 @@ document.addEventListener("DOMContentLoaded", () => {
         header.appendChild(headerMeta);
         header.appendChild(progressEl);
 
-        // +子タスク button on the red header (so it doesn't disappear when a leaf becomes a parent)
+        // 📅 today + +子タスク buttons on the red header
+        header.appendChild(createTodayBtn("expand-panel-add-child", taskId));
         const addChildBtn = createActionLink(
             "expand-panel-add-child",
             `/projects/${currentProjectId}/tasks/new?parent_id=${taskId}`,
@@ -1041,6 +1082,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.appendChild(info);
 
             const childTaskId = child.id.replace("task-", "");
+            card.appendChild(createTodayBtn("expand-card-checks-link", childTaskId));
             card.appendChild(createActionLink("expand-card-checks-link", `/tasks/${childTaskId}/checks`, "達成項目", "達成項目を表示"));
             card.appendChild(createActionLink("expand-card-checks-link", `/projects/${currentProjectId}/tasks/new?parent_id=${childTaskId}`, "＋子タスク", "子タスクを追加"));
             card.appendChild(createActionLink("expand-card-checks-link", `/tasks/${childTaskId}/edit`, "編集", "タスクを編集"));
@@ -1113,6 +1155,7 @@ document.addEventListener("DOMContentLoaded", () => {
         info.appendChild(meta);
 
         const leafTaskId = taskData.id.replace("task-", "");
+        const todayBtn = createTodayBtn("leaf-card-checks-link", leafTaskId);
         const checksLink = createActionLink("leaf-card-checks-link", `/tasks/${leafTaskId}/checks`, "達成項目", "達成項目を表示");
         const addChildLink = createActionLink("leaf-card-checks-link", `/projects/${currentProjectId}/tasks/new?parent_id=${leafTaskId}`, "＋子タスク", "子タスクを追加");
         const editLink = createActionLink("leaf-card-checks-link", `/tasks/${leafTaskId}/edit`, "編集", "タスクを編集");
@@ -1120,6 +1163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         card.appendChild(check);
         card.appendChild(dot);
         card.appendChild(info);
+        card.appendChild(todayBtn);
         card.appendChild(checksLink);
         card.appendChild(addChildLink);
         card.appendChild(editLink);

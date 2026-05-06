@@ -55,3 +55,24 @@ class DailyNoteResponse(BaseModel):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# ---- DailyTask (link from a date to an existing Task) ----
+
+class DailyTaskCreate(BaseModel):
+    daily_date: date
+    task_id: int
+
+
+class DailyTaskResponse(BaseModel):
+    id: int
+    daily_date: date
+    task_id: int
+    position: int
+    created_at: datetime
+    # Embedded task fields for rendering (live values)
+    task_title: str
+    task_is_completed: bool
+    task_assigned_member: str | None = None
+    project_id: int
+    project_name: str

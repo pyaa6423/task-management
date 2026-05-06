@@ -3,9 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.time_entry import TimeEntry
 from app.models.daily_note import DailyNote
+from app.models.daily_task import DailyTask
 from app.models.project import Project
 from app.models.task import Task
-from app.schemas.daily import TimeEntryCreate, TimeEntryUpdate, DailyNoteUpsert
+from app.schemas.daily import TimeEntryCreate, TimeEntryUpdate, DailyNoteUpsert, DailyTaskCreate
 from app.exceptions import NotFoundError, ValidationError
 
 
@@ -96,3 +97,74 @@ async def upsert_note(db: AsyncSession, note_date: date, data: DailyNoteUpsert) 
     await db.commit()
     await db.refresh(note)
     return note
+
+
+# ---- DailyTask (today's tasks list, links to existing Task) ----
+
+def _serialize_daily_task(dt: DailyTask, t: Task, p: Project) -> dict:
+    return {
+        "id": dt.id,
+        "daily_date": dt.daily_date,
+        "task_id": dt.task_id,
+        "position": dt.position,
+        "created_at": dt.created_at,
+        "task_title": t.title,
+        "task_is_completed": t.is_completed,
+        "task_assigned_member": t.assigned_member,
+        "project_id": p.id,
+        "project_name": p.name,
+    }
+
+
+async def list_daily_tasks(db: AsyncSession, daily_date: date) -> list[dict]:
+    stmt = (
+        select(DailyTask, Task, Project)
+        .join(Task, DailyTask.task_id == Task.id)
+        .join(Project, Task.project_id == Project.id)
+        .where(DailyTask.daily_date == daily_date)
+        .order_by(DailyTask.position.asc(), DailyTask.id.asc())
+    )
+    rows = (await db.execute(stmt)).all()
+    return [_serialize_daily_task(dt, t, p) for dt, t, p in rows]
+
+
+async def add_daily_task(db: AsyncSession, data: DailyTaskCreate) -> dict:
+    task = await db.get(Task, data.task_id)
+    if not task:
+        raise NotFoundError("Task", data.task_id)
+    project = await db.get(Project, task.project_id)
+
+    # If already linked for the date, return the existing one (idempotent add)
+    existing = await db.scalar(
+        select(DailyTask).where(
+            DailyTask.daily_date == data.daily_date,
+            DailyTask.task_id == data.task_id,
+        )
+    )
+    if existing:
+        return _serialize_daily_task(existing, task, project)
+
+    # Compute next position
+    max_pos = await db.scalar(
+        select(DailyTask.position)
+        .where(DailyTask.daily_date == data.daily_date)
+        .order_by(DailyTask.position.desc())
+        .limit(1)
+    )
+    dt = DailyTask(
+        daily_date=data.daily_date,
+        task_id=data.task_id,
+        position=(max_pos or 0) + 1,
+    )
+    db.add(dt)
+    await db.commit()
+    await db.refresh(dt)
+    return _serialize_daily_task(dt, task, project)
+
+
+async def remove_daily_task(db: AsyncSession, daily_task_id: int) -> None:
+    dt = await db.get(DailyTask, daily_task_id)
+    if not dt:
+        raise NotFoundError("DailyTask", daily_task_id)
+    await db.delete(dt)
+    await db.commit()
