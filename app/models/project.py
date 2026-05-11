@@ -13,6 +13,7 @@ class Project(Base):
     start_date: Mapped[date | None] = mapped_column(default=None)
     end_date: Mapped[date | None] = mapped_column(default=None)
     team_members: Mapped[list | None] = mapped_column(JSON, default=None)
+    color: Mapped[str | None] = mapped_column(String(20), default=None)
     is_completed: Mapped[bool] = mapped_column(default=False)
     completed_at: Mapped[datetime | None] = mapped_column(default=None)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

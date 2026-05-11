@@ -9,6 +9,7 @@ class ProjectCreate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     team_members: list[str] | None = None
+    color: str | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -17,6 +18,7 @@ class ProjectUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     team_members: list[str] | None = None
+    color: str | None = None
     is_completed: bool | None = None
 
 
@@ -27,6 +29,7 @@ class ProjectResponse(BaseModel):
     start_date: date | None
     end_date: date | None
     team_members: list[str] | None
+    color: str | None
     is_completed: bool
     completed_at: datetime | None
     created_at: datetime

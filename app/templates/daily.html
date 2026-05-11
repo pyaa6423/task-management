@@ -61,12 +61,135 @@
     /* Layout */
     .dl-wrap {
         display: grid;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto auto 1fr;
         grid-template-columns: minmax(320px, 1fr) minmax(480px, 1.4fr);
         gap: 1rem;
         padding: 1rem;
         height: calc(100vh - 80px);
         box-sizing: border-box;
+    }
+
+    /* Stats charts row */
+    .dl-stats-row {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(420px, 2fr);
+        gap: 1rem;
+    }
+    .dl-stats-card {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem 0.7rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 170px;
+    }
+    .dl-stats-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.4rem;
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+    }
+    .dl-stats-title .dl-stats-sub {
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: #888;
+    }
+    .dl-stats-body {
+        flex: 1;
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+    }
+    .dl-donut-wrap { flex-shrink: 0; }
+    .dl-stats-legend {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.78rem;
+        color: #444;
+        max-height: 140px;
+        overflow-y: auto;
+    }
+    .dl-stats-legend-item {
+        display: grid;
+        grid-template-columns: 10px 1fr;
+        column-gap: 0.4rem;
+        align-items: start;
+    }
+    .dl-stats-legend-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-top: 4px;
+    }
+    .dl-stats-legend-text {
+        min-width: 0;
+        line-height: 1.25;
+    }
+    .dl-stats-legend-name {
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dl-stats-legend-val {
+        color: #777;
+        font-size: 0.72rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .dl-stats-empty {
+        color: #aaa;
+        font-size: 0.8rem;
+        font-style: italic;
+        text-align: center;
+        margin: auto;
+    }
+    /* Weekly stacked bar (HTML/CSS — fixed font sizes regardless of width) */
+    .dl-week {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        width: 100%;
+    }
+    .dl-week-row {
+        display: grid;
+        grid-template-columns: 38px 1fr 60px;
+        column-gap: 0.5rem;
+        align-items: center;
+        font-size: 0.78rem;
+    }
+    .dl-week-label {
+        font-weight: 700;
+        color: #555;
+        font-variant-numeric: tabular-nums;
+    }
+    .dl-week-label.sat { color: #0068b7; }
+    .dl-week-label.sun { color: #e60012; }
+    .dl-week-track {
+        position: relative;
+        height: 18px;
+        background: #f3f3f3;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+    }
+    .dl-week-seg {
+        height: 100%;
+    }
+    .dl-week-val {
+        font-size: 0.74rem;
+        color: #666;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
     }
 
     /* Today's tasks bar (full width row between header and main) */
@@ -502,6 +625,21 @@
         <div id="dl-tasks-list" style="display: contents;"></div>
     </div>
 
+    <!-- Stats: today donut + weekly stacked bar -->
+    <div class="dl-stats-row">
+        <div class="dl-stats-card">
+            <div class="dl-stats-title">今日の内訳 <span class="dl-stats-sub" id="dl-stats-today-sub"></span></div>
+            <div class="dl-stats-body">
+                <div class="dl-donut-wrap" id="dl-donut"></div>
+                <div class="dl-stats-legend" id="dl-donut-legend"></div>
+            </div>
+        </div>
+        <div class="dl-stats-card">
+            <div class="dl-stats-title">今週の内訳 <span class="dl-stats-sub" id="dl-stats-week-sub"></span></div>
+            <div class="dl-week" id="dl-week"></div>
+        </div>
+    </div>
+
     <!-- Left: Markdown note -->
     <div class="dl-note-panel">
         <div class="dl-panel-header">
@@ -756,9 +894,10 @@
     // ---------------- Load entries ----------------
     async function loadEntries() {
         const r = await fetch(`/api/v1/daily/entries?entry_date=${currentDate}`);
-        if (!r.ok) { entries = []; renderBlocks(); return; }
+        if (!r.ok) { entries = []; renderBlocks(); loadStats(); return; }
         entries = await r.json();
         renderBlocks();
+        loadStats();
     }
 
     function renderBlocks() {
@@ -803,6 +942,7 @@
             await fetch(`/api/v1/daily/entries/${e.id}`, { method: 'DELETE' });
             entries = entries.filter(x => x.id !== e.id);
             renderBlocks();
+            loadStats();
         });
 
         const topHandle = div.querySelector('.dl-block-resize.top');
@@ -866,6 +1006,7 @@
                     const idx = entries.findIndex(x => x.id === e.id);
                     if (idx >= 0) entries[idx] = updated;
                     renderBlocks();
+                    loadStats();
                 }
             } else {
                 // click → open editor
@@ -1092,6 +1233,134 @@
                 renderDailyTasks();
             });
             tasksListEl.appendChild(chip);
+        }
+    }
+
+    // ---------------- Stats (today donut + weekly bar) ----------------
+    const PALETTE = ['#e60012','#0068b7','#0ab44a','#f5a623','#9013fe','#ff7faa','#5ac8fa','#ffd700','#ff6b35','#7fc97f'];
+    const UNASSIGNED_COLOR = '#bbb';
+
+    function colorForProject(item) {
+        // item: {project_id, color?}
+        if (item && item.color) return item.color;
+        if (!item || item.project_id == null) return UNASSIGNED_COLOR;
+        return PALETTE[item.project_id % PALETTE.length];
+    }
+    function fmtHM(mins) {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        if (h === 0) return `${m}分`;
+        if (m === 0) return `${h}時間`;
+        return `${h}時間${m}分`;
+    }
+
+    function renderDonut(data) {
+        const wrap = document.getElementById('dl-donut');
+        const legend = document.getElementById('dl-donut-legend');
+        const sub = document.getElementById('dl-stats-today-sub');
+        wrap.innerHTML = '';
+        legend.innerHTML = '';
+        const total = data.reduce((s, d) => s + d.minutes, 0);
+        sub.textContent = total > 0 ? `合計 ${fmtHM(total)}` : '';
+
+        if (total === 0) {
+            wrap.innerHTML = '<div class="dl-stats-empty">実績データなし</div>';
+            return;
+        }
+
+        const W = 130, R = 60, IR = 32, CX = W/2, CY = W/2;
+        let startA = -Math.PI / 2;
+        let paths = '';
+        for (const d of data) {
+            const sweep = (d.minutes / total) * 2 * Math.PI;
+            const endA = startA + sweep;
+            const large = sweep > Math.PI ? 1 : 0;
+            const x1 = CX + R * Math.cos(startA), y1 = CY + R * Math.sin(startA);
+            const x2 = CX + R * Math.cos(endA),   y2 = CY + R * Math.sin(endA);
+            const xi2 = CX + IR * Math.cos(endA), yi2 = CY + IR * Math.sin(endA);
+            const xi1 = CX + IR * Math.cos(startA), yi1 = CY + IR * Math.sin(startA);
+            // Donut slice via outer arc + line + inner arc
+            paths += `<path d="M ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${IR} ${IR} 0 ${large} 0 ${xi1} ${yi1} Z" fill="${colorForProject(d)}" />`;
+            startA = endA;
+        }
+        const center = `<text x="${CX}" y="${CY-2}" text-anchor="middle" font-size="13" font-weight="700" fill="#333">${fmtHM(total)}</text>
+                        <text x="${CX}" y="${CY+12}" text-anchor="middle" font-size="9" fill="#888">合計</text>`;
+        wrap.innerHTML = `<svg width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">${paths}${center}</svg>`;
+
+        for (const d of data) {
+            const pct = ((d.minutes / total) * 100).toFixed(0);
+            const item = document.createElement('div');
+            item.className = 'dl-stats-legend-item';
+            item.innerHTML = `
+                <span class="dl-stats-legend-dot" style="background:${colorForProject(d)}"></span>
+                <div class="dl-stats-legend-text">
+                    <div class="dl-stats-legend-name">${escHtml(d.project_name)}</div>
+                    <div class="dl-stats-legend-val">${fmtHM(d.minutes)} ・ ${pct}%</div>
+                </div>
+            `;
+            legend.appendChild(item);
+        }
+    }
+
+    function renderWeekly(weekStart, weekData) {
+        const wrap = document.getElementById('dl-week');
+        const sub = document.getElementById('dl-stats-week-sub');
+        wrap.innerHTML = '';
+
+        const dayLabels = ['月','火','水','木','金','土','日'];
+        const ws = new Date(weekStart + 'T00:00:00');
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(ws);
+            d.setDate(ws.getDate() + i);
+            const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            const projects = weekData[ds] || [];
+            const total = projects.reduce((s, p) => s + p.minutes, 0);
+            days.push({ label: dayLabels[i], dom: d.getDate(), date: ds, projects, total });
+        }
+        const weekTotal = days.reduce((s, d) => s + d.total, 0);
+        const we = new Date(ws); we.setDate(ws.getDate() + 6);
+        sub.textContent = `${ws.getMonth()+1}/${ws.getDate()} 〜 ${we.getMonth()+1}/${we.getDate()}` +
+                          (weekTotal > 0 ? ` ・ 合計 ${fmtHM(weekTotal)}` : '');
+
+        // Scale max: at least 8h so a 30min entry doesn't fill the whole bar
+        const maxMin = Math.max(8 * 60, ...days.map(d => d.total));
+
+        days.forEach((d, i) => {
+            const row = document.createElement('div');
+            row.className = 'dl-week-row';
+            const labelClass = i === 6 ? 'sun' : (i === 5 ? 'sat' : '');
+            const totalPct = (d.total / maxMin) * 100;
+            let segs = '';
+            for (const p of d.projects) {
+                const w = (p.minutes / maxMin) * 100;
+                if (w > 0) {
+                    segs += `<div class="dl-week-seg" style="width:${w}%;background:${colorForProject(p)}" title="${escHtml(p.project_name)}: ${fmtHM(p.minutes)}"></div>`;
+                }
+            }
+            row.innerHTML = `
+                <div class="dl-week-label ${labelClass}">${d.label} ${d.dom}</div>
+                <div class="dl-week-track">${segs}</div>
+                <div class="dl-week-val">${d.total > 0 ? fmtHM(d.total) : ''}</div>
+            `;
+            wrap.appendChild(row);
+        });
+    }
+
+    async function loadStats() {
+        try {
+            const r = await fetch(`/api/v1/daily/stats?d=${currentDate}`);
+            if (!r.ok) {
+                renderDonut([]);
+                renderWeekly(currentDate, {});
+                return;
+            }
+            const data = await r.json();
+            renderDonut(data.today || []);
+            renderWeekly(data.week_start, data.week || {});
+        } catch {
+            renderDonut([]);
+            renderWeekly(currentDate, {});
         }
     }
 

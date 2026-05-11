@@ -127,6 +127,7 @@ async def edit_project_page(
         "start_date": str(project.start_date) if project.start_date else "",
         "end_date": str(project.end_date) if project.end_date else "",
         "team_members": ", ".join(project.team_members) if project.team_members else "",
+        "color": project.color,
     }
 
     return templates.TemplateResponse(request, "project_form.html", {

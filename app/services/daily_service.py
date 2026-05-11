@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.time_entry import TimeEntry
@@ -168,3 +168,63 @@ async def remove_daily_task(db: AsyncSession, daily_task_id: int) -> None:
         raise NotFoundError("DailyTask", daily_task_id)
     await db.delete(dt)
     await db.commit()
+
+
+# ---- Time stats (today's & weekly project breakdown) ----
+
+async def get_time_stats(db: AsyncSession, target_date: date, kind: str = "actual") -> dict:
+    weekday = target_date.weekday()  # 0=Mon ... 6=Sun
+    week_start = target_date - timedelta(days=weekday)
+    week_end = week_start + timedelta(days=6)
+
+    stmt = (
+        select(TimeEntry, Project)
+        .outerjoin(Project, TimeEntry.project_id == Project.id)
+        .where(TimeEntry.entry_date >= week_start)
+        .where(TimeEntry.entry_date <= week_end)
+        .where(TimeEntry.kind == kind)
+    )
+    rows = (await db.execute(stmt)).all()
+
+    today_map: dict = {}
+    week_map: dict = {}
+
+    for entry, project in rows:
+        if entry.start_at and entry.end_at:
+            mins = max(0, int((entry.end_at - entry.start_at).total_seconds() / 60))
+        else:
+            mins = 0
+        if mins == 0:
+            continue
+        pid = entry.project_id
+        pname = project.name if project else "(未割当)"
+        pcolor = project.color if project else None
+        date_str = entry.entry_date.isoformat()
+
+        if entry.entry_date == target_date:
+            key = pid if pid is not None else 0
+            if key not in today_map:
+                today_map[key] = {"project_id": pid, "project_name": pname, "color": pcolor, "minutes": 0}
+            today_map[key]["minutes"] += mins
+
+        if date_str not in week_map:
+            week_map[date_str] = {}
+        key = pid if pid is not None else 0
+        if key not in week_map[date_str]:
+            week_map[date_str][key] = {"project_id": pid, "project_name": pname, "color": pcolor, "minutes": 0}
+        week_map[date_str][key]["minutes"] += mins
+
+    today_list = sorted(today_map.values(), key=lambda x: -x["minutes"])
+    week_dict = {
+        ds: sorted(projects.values(), key=lambda x: -x["minutes"])
+        for ds, projects in week_map.items()
+    }
+
+    return {
+        "date": target_date.isoformat(),
+        "kind": kind,
+        "week_start": week_start.isoformat(),
+        "week_end": week_end.isoformat(),
+        "today": today_list,
+        "week": week_dict,
+    }

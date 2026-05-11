@@ -3,15 +3,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from app.database import engine, Base
 from app.exceptions import AppError
 from app.routers import projects, tasks, reports, gantt, check_items, milestones, task_pages, events, daily
+
+
+async def _ensure_column(conn, table: str, column: str, ddl: str) -> None:
+    rows = (await conn.execute(text(f"PRAGMA table_info({table})"))).all()
+    if not any(r[1] == column for r in rows):
+        await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await _ensure_column(conn, "projects", "color", "color VARCHAR(20)")
     yield
     await engine.dispose()
 

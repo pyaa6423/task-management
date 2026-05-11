@@ -56,6 +56,51 @@
         margin-left: auto;
     }
     .btn-delete:hover { background: #e60012; color: #fff; }
+
+    .color-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .color-row input[type="color"] {
+        width: 48px;
+        height: 36px;
+        padding: 2px;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+    }
+    .color-swatches {
+        display: flex;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+    .color-swatch {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        outline: 1px solid #ddd;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .color-swatch:hover { transform: scale(1.12); }
+    .color-swatch.active {
+        outline: 2px solid #333;
+        outline-offset: 1px;
+    }
+    .color-clear {
+        font-size: 0.8rem;
+        color: #888;
+        background: transparent;
+        border: 1px dashed #ccc;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+    }
+    .color-clear:hover { color: #e60012; border-color: #e60012; }
 </style>
 {% endblock %}
 
@@ -94,6 +139,15 @@
                 <input type="text" id="team_members" value="{{ project.team_members if is_edit else '' }}" placeholder="カンマ区切りで入力">
                 <div class="hint">例: Alice, Bob, Charlie</div>
             </div>
+            <div class="form-group">
+                <label>色（デイリーグラフ・将来的に他のビューでも使用）</label>
+                <div class="color-row">
+                    <input type="color" id="color" value="{{ project.color if (is_edit and project.color) else '#0068b7' }}">
+                    <div class="color-swatches" id="color-swatches"></div>
+                    <button type="button" class="color-clear" id="color-clear">未設定</button>
+                </div>
+                <div class="hint">未設定なら自動色（プロジェクトIDから割当）が使われます</div>
+            </div>
             <div class="form-actions">
                 <button type="submit" class="btn-submit">{% if is_edit %}更新{% else %}作成{% endif %}</button>
                 {% if is_edit %}
@@ -117,6 +171,43 @@ document.addEventListener("DOMContentLoaded", () => {
         return val.split(",").map(s => s.trim()).filter(s => s.length > 0);
     }
 
+    // ---- Color picker ----
+    const PALETTE = ['#e60012','#0068b7','#0ab44a','#f5a623','#9013fe','#ff7faa','#5ac8fa','#ffd700','#ff6b35','#7fc97f'];
+    const colorInput = document.getElementById("color");
+    const swatchesEl = document.getElementById("color-swatches");
+    const clearBtn = document.getElementById("color-clear");
+    let colorSet = {{ "true" if (is_edit and project.color) else "false" }};
+
+    function refreshActiveSwatch() {
+        const cur = (colorInput.value || '').toLowerCase();
+        swatchesEl.querySelectorAll('.color-swatch').forEach(s => {
+            s.classList.toggle('active', colorSet && s.dataset.color === cur);
+        });
+        clearBtn.style.opacity = colorSet ? '1' : '0.4';
+    }
+    PALETTE.forEach(c => {
+        const sw = document.createElement('div');
+        sw.className = 'color-swatch';
+        sw.style.background = c;
+        sw.dataset.color = c;
+        sw.title = c;
+        sw.addEventListener('click', () => {
+            colorInput.value = c;
+            colorSet = true;
+            refreshActiveSwatch();
+        });
+        swatchesEl.appendChild(sw);
+    });
+    colorInput.addEventListener('input', () => {
+        colorSet = true;
+        refreshActiveSwatch();
+    });
+    clearBtn.addEventListener('click', () => {
+        colorSet = false;
+        refreshActiveSwatch();
+    });
+    refreshActiveSwatch();
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("name").value.trim();
@@ -128,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
             start_date: document.getElementById("start_date").value || null,
             end_date: document.getElementById("end_date").value || null,
             team_members: parseCSV(document.getElementById("team_members").value) || null,
+            color: colorSet ? colorInput.value : null,
         };
 
         try {

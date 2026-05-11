@@ -111,3 +111,14 @@ async def add_daily_task(
 @router.delete("/api/v1/daily/tasks/{daily_task_id}", status_code=204)
 async def remove_daily_task(daily_task_id: int, db: AsyncSession = Depends(get_db)):
     await daily_service.remove_daily_task(db, daily_task_id)
+
+
+# ---- Time stats ----
+
+@router.get("/api/v1/daily/stats")
+async def get_stats(
+    d: Date = Query(..., description="YYYY-MM-DD"),
+    kind: str = Query(default="actual", pattern="^(plan|actual)$"),
+    db: AsyncSession = Depends(get_db),
+):
+    return await daily_service.get_time_stats(db, d, kind=kind)
