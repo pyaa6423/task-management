@@ -603,6 +603,25 @@
         color: #555;
         margin-bottom: 0.2rem;
     }
+    .dl-time-picker {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-bottom: 0.7rem;
+    }
+    .dl-time-picker select {
+        flex: 1;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.9rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        outline: none;
+        background: #fff;
+        font-variant-numeric: tabular-nums;
+    }
+    .dl-time-picker select:focus { border-color: #e60012; }
+    .dl-time-sep { font-weight: 700; color: #888; }
+
     .dl-modal input,
     .dl-modal select,
     .dl-modal textarea {
@@ -718,11 +737,19 @@
         <div class="dl-modal-row">
             <div>
                 <label>開始</label>
-                <input type="time" id="dl-m-start" step="900">
+                <div class="dl-time-picker">
+                    <select id="dl-m-start-hour"></select>
+                    <span class="dl-time-sep">:</span>
+                    <select id="dl-m-start-min"></select>
+                </div>
             </div>
             <div>
                 <label>終了</label>
-                <input type="time" id="dl-m-end" step="900">
+                <div class="dl-time-picker">
+                    <select id="dl-m-end-hour"></select>
+                    <span class="dl-time-sep">:</span>
+                    <select id="dl-m-end-min"></select>
+                </div>
             </div>
         </div>
         <div class="dl-modal-row">
@@ -1141,14 +1168,54 @@
     bindColumnCreate(colActual, 'actual');
 
     // ---------------- Modal ----------------
+    // Populate 15-minute time selects once
+    function populateTimeSelects() {
+        const hourEls = [document.getElementById('dl-m-start-hour'), document.getElementById('dl-m-end-hour')];
+        const minEls = [document.getElementById('dl-m-start-min'), document.getElementById('dl-m-end-min')];
+        for (const el of hourEls) {
+            el.innerHTML = '';
+            for (let h = 0; h < 24; h++) {
+                const opt = document.createElement('option');
+                opt.value = pad(h);
+                opt.textContent = pad(h);
+                el.appendChild(opt);
+            }
+        }
+        for (const el of minEls) {
+            el.innerHTML = '';
+            for (let m = 0; m < 60; m += 15) {
+                const opt = document.createElement('option');
+                opt.value = pad(m);
+                opt.textContent = pad(m);
+                el.appendChild(opt);
+            }
+        }
+    }
+    populateTimeSelects();
+
+    function setTimeSelect(prefix, iso) {
+        const t = timeStr(iso); // "HH:MM" or ""
+        const [hh, mm] = (t || '00:00').split(':');
+        document.getElementById(`dl-m-${prefix}-hour`).value = hh;
+        // Snap minutes to nearest 15
+        const mNum = parseInt(mm) || 0;
+        const snapped = pad(Math.round(mNum / 15) * 15 % 60);
+        document.getElementById(`dl-m-${prefix}-min`).value = snapped;
+    }
+    function getTimeSelect(prefix) {
+        const h = document.getElementById(`dl-m-${prefix}-hour`).value;
+        const m = document.getElementById(`dl-m-${prefix}-min`).value;
+        return `${h}:${m}`;
+    }
+
     function openModal(entry) {
         editingId = entry ? entry.id : null;
         const e = entry || draftEntry;
         document.getElementById('dl-modal-title').textContent =
             editingId ? 'ブロックを編集' : 'ブロックを作成';
         document.getElementById('dl-m-title').value = e.title || '';
-        document.getElementById('dl-m-start').value = timeStr(e.start_at);
-        document.getElementById('dl-m-end').value = timeStr(e.end_at);
+        setTimeSelect('start', e.start_at);
+        setTimeSelect('end', e.end_at);
         document.getElementById('dl-m-kind').value = e.kind;
         document.getElementById('dl-m-color').value = e.color || (e.kind === 'actual' ? '#e60012' : '#0068b7');
         document.getElementById('dl-m-project').value = e.project_id || '';
@@ -1167,13 +1234,12 @@
 
     document.getElementById('dl-m-save').addEventListener('click', async () => {
         const title = document.getElementById('dl-m-title').value.trim() || '(無題)';
-        const startT = document.getElementById('dl-m-start').value;
-        const endT = document.getElementById('dl-m-end').value;
+        const startT = getTimeSelect('start');
+        const endT = getTimeSelect('end');
         const kind = document.getElementById('dl-m-kind').value;
         const color = document.getElementById('dl-m-color').value;
         const projectId = document.getElementById('dl-m-project').value || null;
         const note = document.getElementById('dl-m-note').value || null;
-        if (!startT || !endT) { alert('開始・終了時刻が必要です'); return; }
         const sIso = `${currentDate}T${startT}:00`;
         const eIso = `${currentDate}T${endT}:00`;
         if (eIso <= sIso) { alert('終了は開始より後にしてください'); return; }

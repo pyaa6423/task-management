@@ -196,7 +196,8 @@ async def get_time_stats(db: AsyncSession, target_date: date, kind: str = "actua
             mins = 0
         if mins == 0:
             continue
-        pid = entry.project_id
+        # If project was deleted, fall back to "unassigned" (treat orphan FK as null)
+        pid = entry.project_id if project else None
         pname = project.name if project else "(未割当)"
         pcolor = project.color if project else None
         date_str = entry.entry_date.isoformat()
