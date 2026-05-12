@@ -5,5 +5,6 @@ from app.models.event import Event
 from app.models.time_entry import TimeEntry
 from app.models.daily_note import DailyNote
 from app.models.daily_task import DailyTask
+from app.models.deliverable import Deliverable
 
-__all__ = ["Project", "Task", "CheckItem", "Event", "TimeEntry", "DailyNote", "DailyTask"]
+__all__ = ["Project", "Task", "CheckItem", "Event", "TimeEntry", "DailyNote", "DailyTask", "Deliverable"]

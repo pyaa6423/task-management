@@ -12,6 +12,9 @@ class Task(Base):
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("tasks.id", ondelete="CASCADE"), default=None
     )
+    deliverable_id: Mapped[int | None] = mapped_column(
+        ForeignKey("deliverables.id", ondelete="SET NULL"), default=None
+    )
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(default=None)
     start_time: Mapped[datetime | None] = mapped_column(default=None)
@@ -33,3 +36,4 @@ class Task(Base):
     check_items: Mapped[list["CheckItem"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
+    deliverable: Mapped["Deliverable | None"] = relationship(back_populates="tasks")

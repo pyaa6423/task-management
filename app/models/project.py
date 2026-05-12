@@ -25,3 +25,6 @@ class Project(Base):
     events: Mapped[list["Event"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
+    deliverables: Mapped[list["Deliverable"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}成果物編集{% else %}成果物追加{% endif %} - Task Management{% endblock %}
+
+{% block head %}
+<style>
+    .form-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .form-title { font-size: 1.25rem; font-weight: 700; color: #333; }
+
+    .form-card {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        max-width: 720px;
+    }
+    .form-card-header {
+        padding: 0.75rem 1.25rem;
+        background: #e60012;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    .form-card-body { padding: 1.25rem; }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+    .form-group textarea { min-height: 70px; resize: vertical; }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #e60012;
+    }
+    .form-group .hint {
+        font-size: 0.78rem;
+        color: #888;
+        margin-top: 0.25rem;
+    }
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+    .form-row .form-group { flex: 1; }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    .btn-submit {
+        padding: 0.5rem 1.5rem;
+        background: #e60012;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #b8000e; }
+    .btn-delete {
+        padding: 0.5rem 1.5rem;
+        background: #fff;
+        color: #e60012;
+        border: 2px solid #e60012;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: auto;
+    }
+    .btn-delete:hover { background: #e60012; color: #fff; }
+
+    .back-link {
+        color: #555;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    .back-link:hover { color: #e60012; }
+
+    .field-tip {
+        background: #fff7ea;
+        border-left: 3px solid #f5a623;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.78rem;
+        color: #6b5b3e;
+        border-radius: 0 4px 4px 0;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-header">
+    <a href="/projects/{{ project.id }}/status" class="back-link">&#9664; 状況ページに戻る</a>
+    <span class="form-title">
+        {% if is_edit %}成果物編集{% else %}新規成果物{% endif %}
+        ｜ {{ project.name }}
+    </span>
+</div>
+
+<div class="form-card">
+    <div class="form-card-header">
+        {% if is_edit %}{{ deliverable.title }} を編集{% else %}成果物の情報を入力{% endif %}
+    </div>
+    <div class="form-card-body">
+        <form id="deliverable-form">
+            <div class="form-group">
+                <label for="title">タイトル *</label>
+                <input type="text" id="title" value="{{ deliverable.title if is_edit else '' }}" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="parent_id">親成果物（途中成果物にする場合）</label>
+                    <select id="parent_id" {% if is_edit and deliverable.has_children %}disabled{% endif %}>
+                        <option value="">なし（期成果物として登録）</option>
+                        {% for p in parents %}
+                        <option value="{{ p.id }}"
+                            {% if initial_parent_id and p.id == initial_parent_id %}selected{% endif %}>
+                            {{ p.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if is_edit and deliverable.has_children %}
+                    <div class="hint">子成果物があるので親変更は不可</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="status">状態</label>
+                    <select id="status">
+                        <option value="not_started" {% if is_edit and deliverable.status == 'not_started' %}selected{% endif %}>未着手</option>
+                        <option value="in_progress" {% if is_edit and deliverable.status == 'in_progress' %}selected{% endif %}>進行中</option>
+                        <option value="done" {% if is_edit and deliverable.status == 'done' %}selected{% endif %}>完了</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="target_date">期日</label>
+                    <input type="date" id="target_date" value="{{ deliverable.target_date if is_edit else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="sort_order">並び順</label>
+                    <input type="number" id="sort_order" value="{{ deliverable.sort_order if is_edit else 0 }}">
+                    <div class="hint">小さいほど上に表示</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purpose">目的（なぜ作るか）</label>
+                <textarea id="purpose">{{ deliverable.purpose if is_edit else '' }}</textarea>
+                <div class="field-tip">この成果物は何のために作るのか？解決したい課題は？</div>
+            </div>
+
+            <div class="form-group">
+                <label for="value">価値（何が嬉しいか）</label>
+                <textarea id="value">{{ deliverable.value if is_edit else '' }}</textarea>
+                <div class="field-tip">これがあることで、ユーザー / チームがどんな状態になるか</div>
+            </div>
+
+            <div class="form-group">
+                <label for="next_action">受け取った人の次の行動</label>
+                <textarea id="next_action">{{ deliverable.next_action if is_edit else '' }}</textarea>
+                <div class="field-tip">この成果物を手にした人は、次にどう動けるか？</div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">{% if is_edit %}更新{% else %}作成{% endif %}</button>
+                {% if is_edit %}
+                <button type="button" class="btn-delete" id="delete-btn">削除</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("deliverable-form");
+    const isEdit = {{ "true" if is_edit else "false" }};
+    const deliverableId = {{ deliverable.id if is_edit else "null" }};
+    const projectId = {{ project.id }};
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = document.getElementById("title").value.trim();
+        if (!title) return;
+
+        const parentVal = document.getElementById("parent_id").value;
+        const body = {
+            title: title,
+            purpose: document.getElementById("purpose").value.trim() || null,
+            value: document.getElementById("value").value.trim() || null,
+            next_action: document.getElementById("next_action").value.trim() || null,
+            target_date: document.getElementById("target_date").value || null,
+            status: document.getElementById("status").value,
+            parent_id: parentVal ? parseInt(parentVal, 10) : null,
+            sort_order: parseInt(document.getElementById("sort_order").value || "0", 10),
+        };
+
+        try {
+            let resp;
+            if (isEdit) {
+                resp = await fetch(`/api/v1/deliverables/${deliverableId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                });
+            } else {
+                resp = await fetch(`/api/v1/projects/${projectId}/deliverables`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                });
+            }
+            if (!resp.ok) {
+                const err = await resp.json();
+                alert(err.detail || "保存に失敗しました");
+                return;
+            }
+            window.location.href = `/projects/${projectId}/status`;
+        } catch (err) {
+            alert("通信エラーが発生しました");
+        }
+    });
+
+    if (isEdit) {
+        document.getElementById("delete-btn").addEventListener("click", async () => {
+            if (!confirm("この成果物を削除しますか？子成果物も一緒に削除されます。")) return;
+            try {
+                const resp = await fetch(`/api/v1/deliverables/${deliverableId}`, { method: "DELETE" });
+                if (!resp.ok) { alert("削除に失敗しました"); return; }
+                window.location.href = `/projects/${projectId}/status`;
+            } catch (err) { alert("通信エラー"); }
+        });
+    }
+});
+</script>
+{% endblock %}

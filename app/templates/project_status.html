@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block title %}プロジェクト状況{% if project %} - {{ project.name }}{% endif %} - Task Management{% endblock %}
+
+{% block head %}
+<style>
+    .status-page { padding: 0 0.5rem; }
+
+    .status-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    .status-toolbar h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #222;
+    }
+    .project-switcher select {
+        padding: 0.4rem 0.7rem;
+        border: 2px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: #fff;
+        cursor: pointer;
+    }
+    .project-switcher select:focus {
+        outline: none;
+        border-color: #e60012;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #888;
+    }
+    .empty-state a {
+        color: #e60012;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    /* Project banner */
+    .project-banner {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-left: 6px solid var(--accent, #e60012);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .project-banner .project-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .project-banner .project-name {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #222;
+    }
+    .project-banner .project-period {
+        font-size: 0.85rem;
+        color: #666;
+    }
+    .project-banner .project-desc {
+        flex: 1;
+        min-width: 200px;
+        color: #555;
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+    .project-banner .project-team {
+        font-size: 0.8rem;
+        color: #777;
+    }
+    .project-banner .project-team .member {
+        display: inline-block;
+        background: #f3f3f3;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        margin: 0 0.2rem 0.2rem 0;
+    }
+
+    /* Summary chips */
+    .summary-row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .summary-chip {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        min-width: 110px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+    .summary-chip .label {
+        font-size: 0.7rem;
+        color: #777;
+        letter-spacing: 0.5px;
+    }
+    .summary-chip .value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #222;
+    }
+    .summary-chip.done .value { color: #0ab44a; }
+    .summary-chip.in_progress .value { color: #0068b7; }
+    .summary-chip.not_started .value { color: #888; }
+    .summary-chip.overdue .value { color: #e60012; }
+
+    /* Add button */
+    .add-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    .add-row h3 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: #333;
+    }
+    .btn-add {
+        padding: 0.45rem 1rem;
+        background: #e60012;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: background 0.2s;
+    }
+    .btn-add:hover { background: #b8000e; }
+
+    /* Deliverable cards */
+    .deliverable-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .deliverable-card {
+        background: #fff;
+        border: 2px solid #e8e8e8;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .deliverable-card .card-head {
+        padding: 0.75rem 1.1rem;
+        background: #f9f9f9;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .deliverable-card .card-head .title {
+        font-weight: 700;
+        color: #222;
+        font-size: 1rem;
+        flex: 1;
+        min-width: 150px;
+    }
+    .badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        letter-spacing: 0.5px;
+    }
+    .badge.not_started { background: #eee; color: #666; }
+    .badge.in_progress { background: #d8ecff; color: #0068b7; }
+    .badge.done { background: #d4f4dd; color: #0ab44a; }
+    .badge.overdue { background: #ffe0e3; color: #e60012; }
+    .badge.kind { background: #fff7ea; color: #b87a00; border: 1px solid #f5d28a; }
+
+    .card-actions { display: flex; gap: 0.4rem; }
+    .card-actions a {
+        font-size: 0.78rem;
+        color: #555;
+        text-decoration: none;
+        padding: 0.25rem 0.6rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+    }
+    .card-actions a:hover { border-color: #e60012; color: #e60012; }
+
+    .card-body { padding: 0.9rem 1.1rem; }
+    .reason-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+    @media (max-width: 720px) {
+        .reason-grid { grid-template-columns: 1fr; }
+    }
+    .reason-block {
+        background: #fafafa;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+    }
+    .reason-block .reason-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #e60012;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+    .reason-block .reason-text {
+        font-size: 0.85rem;
+        color: #333;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .reason-block .reason-text.empty {
+        color: #aaa;
+        font-style: italic;
+    }
+
+    .meta-line {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 0.6rem;
+        font-size: 0.78rem;
+        color: #666;
+    }
+    .meta-line .progress-bar {
+        flex: 1;
+        min-width: 140px;
+        height: 8px;
+        background: #eee;
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+    }
+    .meta-line .progress-bar > span {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        background: linear-gradient(90deg, #e60012, #ff6b35);
+        border-radius: 999px;
+    }
+
+    /* Children timeline */
+    .children-section {
+        background: #fcfcfc;
+        border-top: 1px dashed #ddd;
+        padding: 0.9rem 1.1rem;
+    }
+    .children-section h4 {
+        margin: 0 0 0.6rem 0;
+        font-size: 0.8rem;
+        color: #888;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .children-section h4 a {
+        font-size: 0.72rem;
+        color: #e60012;
+        text-decoration: none;
+        font-weight: 700;
+    }
+    .child-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.7rem;
+    }
+    .child-card {
+        background: #fff;
+        border: 1.5px solid #e8e8e8;
+        border-radius: 8px;
+        padding: 0.6rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .child-card .child-head {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .child-card .child-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: #222;
+        flex: 1;
+        word-break: break-word;
+    }
+    .child-card .child-row {
+        font-size: 0.75rem;
+        color: #555;
+    }
+    .child-card .child-row strong { color: #e60012; font-weight: 700; }
+    .child-card .child-actions {
+        display: flex;
+        gap: 0.3rem;
+        margin-top: 0.2rem;
+    }
+    .child-card .child-actions a {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.45rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #555;
+    }
+    .child-card .child-actions a:hover { border-color: #e60012; color: #e60012; }
+
+    .child-empty {
+        font-size: 0.78rem;
+        color: #999;
+        padding: 0.4rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+    {% if not project %}
+        <div class="empty-state">
+            <p>プロジェクトがまだありません。</p>
+            <p><a href="/projects/new">+ プロジェクトを作成</a></p>
+        </div>
+    {% else %}
+        <div class="status-toolbar">
+            <h2>プロジェクト状況</h2>
+            <div class="project-switcher">
+                <select id="project-select">
+                    {% for p in projects %}
+                    <option value="{{ p.id }}" {% if p.selected %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <a href="/projects/new" class="btn-add" style="margin-left:auto;">＋ プロジェクト追加</a>
+        </div>
+
+        <div class="project-banner" style="--accent: {{ project.color }};">
+            <div class="project-meta">
+                <div class="project-name">{{ project.name }}</div>
+                {% if project.start_date or project.end_date %}
+                <div class="project-period">
+                    期間: {{ project.start_date or '未設定' }} 〜 {{ project.end_date or '未設定' }}
+                </div>
+                {% endif %}
+            </div>
+            {% if project.description %}
+            <div class="project-desc">{{ project.description }}</div>
+            {% endif %}
+            {% if project.team_members %}
+            <div class="project-team">
+                {% for m in project.team_members %}<span class="member">{{ m }}</span>{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if summary and summary.total > 0 %}
+        <div class="summary-row">
+            <div class="summary-chip"><span class="label">成果物 合計</span><span class="value">{{ summary.total }}</span></div>
+            <div class="summary-chip done"><span class="label">完了</span><span class="value">{{ summary.done }}</span></div>
+            <div class="summary-chip in_progress"><span class="label">進行中</span><span class="value">{{ summary.in_progress }}</span></div>
+            <div class="summary-chip not_started"><span class="label">未着手</span><span class="value">{{ summary.not_started }}</span></div>
+            {% if summary.overdue > 0 %}
+            <div class="summary-chip overdue"><span class="label">期日超過</span><span class="value">{{ summary.overdue }}</span></div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="add-row">
+            <h3>期成果物</h3>
+            <a href="/projects/{{ project.id }}/deliverables/new" class="btn-add">＋ 期成果物を追加</a>
+        </div>
+
+        {% if deliverables %}
+        <div class="deliverable-list">
+            {% for d in deliverables %}
+            <div class="deliverable-card">
+                <div class="card-head">
+                    <span class="badge kind">期成果物</span>
+                    <span class="title">{{ d.title }}</span>
+                    {% if d.is_overdue %}<span class="badge overdue">期日超過</span>{% endif %}
+                    <span class="badge {{ d.status }}">{{ d.status_label }}</span>
+                    <div class="card-actions">
+                        <a href="/deliverables/{{ d.id }}/edit">編集</a>
+                        <a href="/projects/{{ project.id }}/deliverables/new?parent_id={{ d.id }}">＋途中成果物</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="reason-grid">
+                        <div class="reason-block">
+                            <div class="reason-label">目的</div>
+                            <div class="reason-text {% if not d.purpose %}empty{% endif %}">{{ d.purpose or '未記入' }}</div>
+                        </div>
+                        <div class="reason-block">
+                            <div class="reason-label">価値</div>
+                            <div class="reason-text {% if not d.value %}empty{% endif %}">{{ d.value or '未記入' }}</div>
+                        </div>
+                        <div class="reason-block">
+                            <div class="reason-label">受け取った人の次の行動</div>
+                            <div class="reason-text {% if not d.next_action %}empty{% endif %}">{{ d.next_action or '未記入' }}</div>
+                        </div>
+                    </div>
+                    <div class="meta-line">
+                        {% if d.target_date_display %}<span>期日: <strong style="color:#222;">{{ d.target_date_display }}</strong></span>{% endif %}
+                        {% if d.task_total > 0 %}
+                            <span>タスク: {{ d.task_done }}/{{ d.task_total }} ({{ d.progress }}%)</span>
+                            <div class="progress-bar"><span style="width: {{ d.progress }}%;"></span></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="children-section">
+                    <h4>
+                        途中成果物
+                        <a href="/projects/{{ project.id }}/deliverables/new?parent_id={{ d.id }}">＋ 追加</a>
+                    </h4>
+                    {% if d.children %}
+                    <div class="child-grid">
+                        {% for c in d.children %}
+                        <div class="child-card">
+                            <div class="child-head">
+                                <span class="child-title">{{ c.title }}</span>
+                                {% if c.is_overdue %}<span class="badge overdue">超過</span>{% endif %}
+                                <span class="badge {{ c.status }}">{{ c.status_label }}</span>
+                            </div>
+                            {% if c.purpose %}<div class="child-row"><strong>目的:</strong> {{ c.purpose }}</div>{% endif %}
+                            {% if c.value %}<div class="child-row"><strong>価値:</strong> {{ c.value }}</div>{% endif %}
+                            {% if c.next_action %}<div class="child-row"><strong>次の行動:</strong> {{ c.next_action }}</div>{% endif %}
+                            {% if c.target_date_display %}<div class="child-row">期日: {{ c.target_date_display }}</div>{% endif %}
+                            {% if c.task_total > 0 %}
+                            <div class="child-row">タスク: {{ c.task_done }}/{{ c.task_total }} ({{ c.progress }}%)</div>
+                            <div class="progress-bar" style="width:100%; height:6px;"><span style="width: {{ c.progress }}%;"></span></div>
+                            {% endif %}
+                            <div class="child-actions">
+                                <a href="/deliverables/{{ c.id }}/edit">編集</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="child-empty">途中成果物はまだありません</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>このプロジェクトにはまだ成果物が登録されていません。</p>
+            <p><a href="/projects/{{ project.id }}/deliverables/new">＋ 最初の期成果物を追加</a></p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const sel = document.getElementById("project-select");
+    if (sel) {
+        sel.addEventListener("change", (e) => {
+            const id = e.target.value;
+            if (id) window.location.href = `/projects/${id}/status`;
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from app.database import engine, Base
 from app.exceptions import AppError
-from app.routers import projects, tasks, reports, gantt, check_items, milestones, task_pages, events, daily
+from app.routers import projects, tasks, reports, gantt, check_items, milestones, task_pages, events, daily, deliverables, project_status
 
 
 async def _ensure_column(conn, table: str, column: str, ddl: str) -> None:
@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await _ensure_column(conn, "projects", "color", "color VARCHAR(20)")
+        await _ensure_column(conn, "tasks", "deliverable_id", "deliverable_id INTEGER REFERENCES deliverables(id) ON DELETE SET NULL")
     yield
     await engine.dispose()
 
@@ -45,6 +46,8 @@ app.include_router(milestones.router)
 app.include_router(task_pages.router)
 app.include_router(events.router)
 app.include_router(daily.router)
+app.include_router(deliverables.router)
+app.include_router(project_status.router)
 
 
 @app.exception_handler(AppError)
