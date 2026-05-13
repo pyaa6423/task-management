@@ -761,17 +761,15 @@
                 </select>
             </div>
             <div>
-                <label>色</label>
-                <input type="color" id="dl-m-color" value="#0068b7">
+                <label>プロジェクト</label>
+                <select id="dl-m-project">
+                    <option value="" data-color="">（なし）</option>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}" data-color="{{ p.color or '' }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
-        <label>プロジェクト</label>
-        <select id="dl-m-project">
-            <option value="">（なし）</option>
-            {% for p in projects %}
-            <option value="{{ p.id }}">{{ p.name }}</option>
-            {% endfor %}
-        </select>
         <label>メモ</label>
         <textarea id="dl-m-note" rows="2"></textarea>
         <div class="dl-modal-actions">
@@ -822,6 +820,17 @@
 
     // ---------------- Helpers ----------------
     function pad(n) { return String(n).padStart(2, '0'); }
+
+    // Block color: project color → palette by id → gray for unassigned
+    const PALETTE_BLOCKS = ['#e60012','#0068b7','#0ab44a','#f5a623','#9013fe','#ff7faa','#5ac8fa','#ffd700','#ff6b35','#7fc97f'];
+    const UNASSIGNED_BLOCK_COLOR = '#7a7a7a'; // legible with white text
+    function blockColorFor(projectId) {
+        if (!projectId) return UNASSIGNED_BLOCK_COLOR;
+        const opt = document.querySelector(`#dl-m-project option[value="${projectId}"]`);
+        const c = opt?.dataset?.color;
+        if (c) return c;
+        return PALETTE_BLOCKS[projectId % PALETTE_BLOCKS.length];
+    }
 
     function minutesFromY(y) {
         // snap to slot
@@ -982,7 +991,7 @@
         div.className = 'dl-block' + (e.kind === 'actual' ? ' actual' : '');
         div.style.top = `${top}px`;
         div.style.height = `${h}px`;
-        if (e.color) div.style.background = e.color;
+        div.style.background = blockColorFor(e.project_id);
         div.dataset.id = e.id;
         div.innerHTML = `
             <div class="dl-block-time">${timeStr(e.start_at)}–${timeStr(e.end_at)}</div>
@@ -1154,7 +1163,6 @@
                     start_at: isoFromMinutes(currentDate, sMin),
                     end_at: isoFromMinutes(currentDate, eMin),
                     title: '',
-                    color: kind === 'actual' ? '#e60012' : '#0068b7',
                     project_id: null,
                     note: '',
                 };
@@ -1217,7 +1225,6 @@
         setTimeSelect('start', e.start_at);
         setTimeSelect('end', e.end_at);
         document.getElementById('dl-m-kind').value = e.kind;
-        document.getElementById('dl-m-color').value = e.color || (e.kind === 'actual' ? '#e60012' : '#0068b7');
         document.getElementById('dl-m-project').value = e.project_id || '';
         document.getElementById('dl-m-note').value = e.note || '';
         document.getElementById('dl-m-delete').style.display = editingId ? 'inline-block' : 'none';
@@ -1237,7 +1244,6 @@
         const startT = getTimeSelect('start');
         const endT = getTimeSelect('end');
         const kind = document.getElementById('dl-m-kind').value;
-        const color = document.getElementById('dl-m-color').value;
         const projectId = document.getElementById('dl-m-project').value || null;
         const note = document.getElementById('dl-m-note').value || null;
         const sIso = `${currentDate}T${startT}:00`;
@@ -1249,7 +1255,7 @@
             end_at: eIso,
             title,
             kind,
-            color,
+            color: null,
             note,
             project_id: projectId ? parseInt(projectId) : null,
         };
