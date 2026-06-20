@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% set active_page = "" %}
 
 {% block title %}{% if is_edit %}プロジェクト編集{% else %}プロジェクト追加{% endif %} - Task Management{% endblock %}
+
+{% block page_title %}プロジェクト{% endblock %}
 
 {% block head %}
 <style>
@@ -10,11 +13,11 @@
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
-    .form-title { font-size: 1.25rem; font-weight: 700; color: #333; }
+    .form-title { font-size: 1.25rem; font-weight: 700; color: var(--text); }
 
     .form-card {
-        background: #fff;
-        border: 2px solid #e8e8e8;
+        background: var(--surface);
+        border: 2px solid var(--border);
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -22,8 +25,8 @@
     }
     .form-card-header {
         padding: 0.75rem 1.25rem;
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
         font-weight: 700;
         font-size: 0.95rem;
     }
@@ -45,9 +48,9 @@
     }
     .btn-delete {
         padding: 0.5rem 1.5rem;
-        background: #fff;
-        color: #e60012;
-        border: 2px solid #e60012;
+        background: var(--surface);
+        color: var(--red);
+        border: 2px solid var(--red);
         border-radius: 6px;
         font-size: 0.9rem;
         font-weight: 600;
@@ -55,7 +58,7 @@
         transition: all 0.2s;
         margin-left: auto;
     }
-    .btn-delete:hover { background: #e60012; color: #fff; }
+    .btn-delete:hover { background: var(--red); color: #fff; }
 
     .color-row {
         display: flex;
@@ -67,9 +70,9 @@
         width: 48px;
         height: 36px;
         padding: 2px;
-        border: 2px solid #d9d9d9;
+        border: 2px solid var(--border-2);
         border-radius: 6px;
-        background: #fff;
+        background: var(--surface);
         cursor: pointer;
     }
     .color-swatches {
@@ -81,33 +84,32 @@
         width: 26px;
         height: 26px;
         border-radius: 50%;
-        border: 2px solid #fff;
-        outline: 1px solid #ddd;
+        border: 2px solid var(--surface);
+        outline: 1px solid var(--border);
         cursor: pointer;
         transition: transform 0.1s;
     }
     .color-swatch:hover { transform: scale(1.12); }
     .color-swatch.active {
-        outline: 2px solid #333;
+        outline: 2px solid var(--text);
         outline-offset: 1px;
     }
     .color-clear {
         font-size: 0.8rem;
-        color: #888;
+        color: var(--text-faint);
         background: transparent;
-        border: 1px dashed #ccc;
+        border: 1px dashed var(--border);
         border-radius: 4px;
         padding: 0.25rem 0.5rem;
         cursor: pointer;
     }
-    .color-clear:hover { color: #e60012; border-color: #e60012; }
+    .color-clear:hover { color: var(--accent); border-color: var(--accent); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="form-header">
     <a href="/gantt" class="back-link">&#9664; 戻る</a>
-    <span class="form-title">{% if is_edit %}プロジェクト編集{% else %}新規プロジェクト{% endif %}</span>
 </div>
 
 <div class="form-card">

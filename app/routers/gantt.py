@@ -39,6 +39,13 @@ async def gantt_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "gantt.html", {"projects": projects})
 
 
+@router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Modern dark dashboard prototype (sidebar layout)."""
+    projects = (await db.scalars(select(Project).order_by(Project.created_at.desc()))).all()
+    return templates.TemplateResponse(request, "dashboard.html", {"projects": projects})
+
+
 @router.get("/api/v1/gantt/overview")
 async def gantt_overview(db: AsyncSession = Depends(get_db)):
     """All projects with their top-level tasks for overview display."""

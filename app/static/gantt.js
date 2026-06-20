@@ -565,6 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
             buildOverviewLabels(ganttDiv, labelsDiv, allBars, projects);
             addOverlays(ganttDiv);
             addEventOverlays(ganttDiv, null);
+            scrollToEarliestBar(ganttDiv);
         }, 60);
 
         // Click on bar → navigate to that project
@@ -593,6 +594,39 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hideCompleted && hiddenCompleted.length > 0) {
             buildCompletedSummary(container, hiddenCompleted);
         }
+    }
+
+    // ── 初期スクロール位置を「最も開始が早いタスク」に合わせる ──
+    // frappe-gantt の既定スクロールだと、プロジェクト帯(project-*)の開始(=gantt_start)寄りに
+    // 留まり、実タスクが画面右外に出てしまう。実タスクの最左バーが見える位置まで動かす。
+    function scrollToEarliestBar(ganttDiv, leftPad = 40) {
+        const svg = ganttDiv.querySelector("svg.gantt");
+        if (!svg) return;
+
+        // 実タスクのバーのみで最左X（プロジェクト帯は除外）。タスクが無ければ全バーで代替。
+        function minBarX(taskOnly) {
+            let min = Infinity;
+            svg.querySelectorAll(".bar-wrapper").forEach((w) => {
+                const id = w.getAttribute("data-id") || "";
+                if (taskOnly && id.startsWith("project-")) return;
+                const bar = w.querySelector(".bar");
+                if (!bar) return;
+                const x = parseFloat(bar.getAttribute("x"));
+                if (!isNaN(x)) min = Math.min(min, x);
+            });
+            return min;
+        }
+        let minX = minBarX(true);
+        if (!isFinite(minX)) minX = minBarX(false);
+        if (!isFinite(minX)) return;
+
+        // 実スクロール要素は frappe が生成する SVG 直近の overflow 祖先(.gantt-container)
+        let el = svg.parentElement;
+        while (el && el !== ganttDiv && !(el.scrollWidth > el.clientWidth + 2)) {
+            el = el.parentElement;
+        }
+        if (!el || el === ganttDiv) el = svg.parentElement;
+        if (el) el.scrollLeft = Math.max(0, minX - leftPad);
     }
 
     // ── Build fixed labels for overview ──
@@ -866,6 +900,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             addOverlays(ganttDiv);
             addEventOverlays(ganttDiv, currentProjectId);
+            scrollToEarliestBar(ganttDiv);
         }, 50);
 
         // Add task button

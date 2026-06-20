@@ -28,10 +28,16 @@
 - 完了済みタスクに子タスク追加時、親の完了を自動解除
 
 ## UI/デザインルール
-- **任天堂風**: 白基調、アクセントカラー `#e60012`（任天堂レッド）
-- 土日: 青(`#0068b7`)、日曜/祝日: 赤(`#e60012`)
-- テーマ6種: Nintendo, Mario, Splatoon, Zelda, Kirby, Monochrome
-- CSS は基本的に `app/static/style.css`、ページ固有のスタイルはテンプレート内 `<style>` ブロック
+- **モダンなダークダッシュボード**: 左サイドバー＋メイン、濃紺基調、シアンアクセント
+- 全色は `app/static/style.css` の `:root` 設計トークンを使う（ハードコード禁止）
+  - 背景 `--bg #0f172a` / カード `--surface #1e293b` / アクセント `--accent #22d3ee`（シアン）
+  - テキスト `--text #f1f5f9` / `--text-dim #cbd5e1` / `--text-faint #94a3b8`
+  - 土曜 `--blue`、日曜/祝日 `--red`、成功 `--green`、警告 `--amber`
+- **共通シェルは `base.html`**: サイドバー＋トップバー。各ページは `{% set active_page %}`、`{% block page_title %}`、`{% block page_subtitle %}`、`{% block topbar_actions %}`（右側コントロール）、`{% block content %}` を使う
+- CSS は基本的に `app/static/style.css`、ページ固有のスタイルはテンプレート内 `<style>` ブロック（トークンを var() で参照）
+- ガントのバー配色は従来のテーマ6種（Nintendo/Mario/Splatoon/Zelda/Kirby/Monochrome）を流用。デフォルトはシアン系(splatoon)に自動切替
+- **ライト/ダーク切替**: サイドバー最下部のトグル。`<html data-theme="dark|light">` でトークンを差し替え、`localStorage["ui-theme"]` に保存（既定ダーク）。`base.html` の head で描画前に適用
+- 旧「任天堂風（白基調・赤 #e60012）」から移行済み（2026-06 リデザイン）。**旧UIへの完全復帰**は `git checkout ui-legacy-nintendo -- app/templates app/static/style.css`（詳細: `legacy/README.md`）
 
 ## frappe-gantt 注意事項
 - **SVGのDOM位置をずらす操作は禁止** — 必ず追記のみ（詳細: `skills/frontend-gantt/`）
@@ -42,6 +48,7 @@
 ## ページ構成
 | URL | 内容 |
 |-----|------|
+| `/dashboard` | ダッシュボード（KPIカード＋ガント） |
 | `/gantt` | ガントチャート（トップページ、`/` からリダイレクト） |
 | `/milestones` | マイルストーン タイムライン |
 | `/events` | 予定管理 |

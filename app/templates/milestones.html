@@ -1,6 +1,10 @@
 {% extends "base.html" %}
+{% set active_page = "milestones" %}
 
 {% block title %}Milestone Timeline - Task Management{% endblock %}
+
+{% block page_title %}マイルストーン{% endblock %}
+{% block page_subtitle %}<p class="subtitle">プロジェクトの節目と期日</p>{% endblock %}
 
 {% block head %}
 <style>
@@ -13,7 +17,7 @@
     .ms-title {
         font-size: 1.35rem;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
     }
     .ms-filter {
         display: flex;
@@ -24,21 +28,21 @@
     .ms-filter label {
         font-size: 0.85rem;
         font-weight: 600;
-        color: #484848;
+        color: var(--text);
     }
     .ms-filter select {
         padding: 0.4rem 0.75rem;
         font-size: 0.9rem;
-        border: 2px solid #d9d9d9;
+        border: 2px solid var(--border-2);
         border-radius: 6px;
-        background: #fff;
-        color: #484848;
+        background: var(--surface);
+        color: var(--text);
         outline: none;
         min-width: 200px;
         transition: border-color 0.2s;
     }
     .ms-filter select:focus {
-        border-color: #e60012;
+        border-color: var(--accent);
     }
 
     /* Timeline container */
@@ -54,7 +58,7 @@
         top: 0;
         bottom: 0;
         width: 2px;
-        background: #d9d9d9;
+        background: var(--border-2);
     }
 
     /* Date separator */
@@ -68,26 +72,26 @@
         top: 2px;
         width: 14px;
         height: 14px;
-        background: #e60012;
+        background: var(--accent);
         border-radius: 50%;
-        border: 2px solid #fff;
-        box-shadow: 0 0 0 2px #e60012;
+        border: 2px solid var(--surface);
+        box-shadow: 0 0 0 2px var(--accent);
         z-index: 2;
     }
     .date-label {
         font-size: 0.85rem;
         font-weight: 700;
-        color: #e60012;
-        background: #fff5f5;
+        color: var(--accent);
+        background: var(--accent-soft);
         display: inline-block;
         padding: 0.2rem 0.75rem;
         border-radius: 12px;
-        border: 1px solid #fcc;
+        border: 1px solid var(--border-2);
     }
     .date-label-note {
         font-size: 0.75rem;
         font-weight: 600;
-        color: #999;
+        color: var(--text-faint);
         margin-left: 0.5rem;
     }
 
@@ -96,19 +100,19 @@
         position: relative;
         margin: 2rem 0 1rem 0;
         padding: 0.75rem 1rem;
-        background: #fff;
-        border-bottom: 3px solid #e60012;
+        background: var(--surface);
+        border-bottom: 3px solid var(--accent);
         border-radius: 8px 8px 0 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     .project-header .project-name {
         font-size: 1.1rem;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
     }
     .project-header .project-dates {
         font-size: 0.75rem;
-        color: #999;
+        color: var(--text-faint);
         margin-top: 0.15rem;
     }
     .project-dot {
@@ -117,10 +121,10 @@
         top: 12px;
         width: 16px;
         height: 16px;
-        background: #e60012;
+        background: var(--accent);
         border-radius: 50%;
-        border: 3px solid #fff;
-        box-shadow: 0 0 0 2px #e60012;
+        border: 3px solid var(--surface);
+        box-shadow: 0 0 0 2px var(--accent);
         z-index: 2;
     }
 
@@ -135,25 +139,25 @@
         top: 14px;
         width: 10px;
         height: 10px;
-        background: #484848;
+        background: var(--text-faint);
         border-radius: 50%;
-        border: 2px solid #fff;
+        border: 2px solid var(--surface);
         z-index: 2;
     }
     .task-dot.completed {
-        background: #0ab44a;
+        background: var(--green);
     }
     .task-card {
-        background: #fff;
-        border: 1px solid #e8e8e8;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 0.75rem 1rem;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         transition: all 0.15s;
     }
     .task-card:hover {
-        border-color: #e60012;
-        box-shadow: 0 2px 8px rgba(230,0,18,0.1);
+        border-color: var(--accent);
+        box-shadow: 0 2px 8px rgba(34,211,238,0.1);
     }
     .task-card.completed {
         opacity: 0.6;
@@ -161,22 +165,22 @@
     .task-card .task-title {
         font-weight: 600;
         font-size: 0.9rem;
-        color: #333;
+        color: var(--text);
     }
     .task-card.completed .task-title {
         text-decoration: line-through;
-        color: #999;
+        color: var(--text-faint);
     }
     .task-meta {
         display: flex;
         gap: 1rem;
         margin-top: 0.25rem;
         font-size: 0.75rem;
-        color: #888;
+        color: var(--text-faint);
         flex-wrap: wrap;
     }
     .task-meta .member {
-        color: #0068b7;
+        color: var(--blue);
         font-weight: 600;
     }
     .task-status {
@@ -187,12 +191,12 @@
         font-weight: 600;
     }
     .task-status.done {
-        background: #e6f9ee;
-        color: #0ab44a;
+        background: rgba(52,211,153,0.15);
+        color: var(--green);
     }
     .task-status.pending {
-        background: #fff5e6;
-        color: #f5a623;
+        background: rgba(251,191,36,0.15);
+        color: var(--amber);
     }
     .task-complete-toggle {
         cursor: pointer;
@@ -208,7 +212,7 @@
         cursor: pointer;
     }
     .task-card.has-children:hover {
-        border-color: #e60012;
+        border-color: var(--accent);
     }
     .task-title-row {
         display: flex;
@@ -222,8 +226,8 @@
         gap: 0.25rem;
         font-size: 0.7rem;
         font-weight: 600;
-        color: #999;
-        background: #f0f0f0;
+        color: var(--text-faint);
+        background: var(--surface-2);
         padding: 0.15rem 0.5rem;
         border-radius: 10px;
         white-space: nowrap;
@@ -243,22 +247,22 @@
         margin-top: 0.5rem;
         font-size: 0.75rem;
         font-weight: 600;
-        color: #e60012;
+        color: var(--accent);
         text-decoration: none;
         padding: 0.2rem 0.5rem;
-        border: 1.5px solid #e60012;
+        border: 1.5px solid var(--accent);
         border-radius: 4px;
         transition: all 0.15s;
     }
     .ms-checks-link:hover {
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
     }
 
     /* Child tasks indentation */
     .children-list {
         margin-left: 1.5rem;
-        border-left: 2px dashed #e8e8e8;
+        border-left: 2px dashed var(--border);
         padding-left: 0.75rem;
     }
     .children-list .task-card {
@@ -275,7 +279,7 @@
     .check-list {
         margin-top: 0.5rem;
         padding-top: 0.4rem;
-        border-top: 1px dashed #eee;
+        border-top: 1px dashed var(--border);
     }
     .check-item {
         display: flex;
@@ -283,14 +287,14 @@
         gap: 0.4rem;
         padding: 0.2rem 0;
         font-size: 0.78rem;
-        color: #555;
+        color: var(--text-dim);
     }
     .check-item.checked {
         opacity: 0.5;
     }
     .check-item.checked .check-title {
         text-decoration: line-through;
-        color: #aaa;
+        color: var(--text-faint);
     }
     .check-toggle {
         width: 16px;
@@ -301,20 +305,20 @@
         justify-content: center;
         font-size: 0.65rem;
         border-radius: 3px;
-        border: 1.5px solid #bbb;
-        color: #bbb;
+        border: 1.5px solid var(--border-2);
+        color: var(--text-faint);
         cursor: pointer;
         transition: all 0.15s;
-        background: #fff;
+        background: var(--surface);
         margin-top: 1px;
     }
     .check-toggle:hover {
-        border-color: #0ab44a;
-        color: #0ab44a;
+        border-color: var(--green);
+        color: var(--green);
     }
     .check-item.checked .check-toggle {
-        background: #0ab44a;
-        border-color: #0ab44a;
+        background: var(--green);
+        border-color: var(--green);
         color: #fff;
     }
     .check-info {
@@ -333,14 +337,14 @@
         color: #fff;
         white-space: nowrap;
     }
-    .tag-pill.inputs { background: #0068b7; }
-    .tag-pill.outputs { background: #0ab44a; }
-    .tag-pill.results { background: #f5a623; }
+    .tag-pill.inputs { background: var(--blue); }
+    .tag-pill.outputs { background: var(--green); }
+    .tag-pill.results { background: var(--amber); }
     .tag-pill.evidences { background: #9b59b6; }
 
     .empty-message {
         text-align: center;
-        color: #a0a0a0;
+        color: var(--text-faint);
         padding: 3rem;
         font-size: 0.95rem;
     }
@@ -357,11 +361,11 @@
         width: 14px;
         height: 14px;
         transform: rotate(45deg);
-        border: 2px solid #fff;
+        border: 2px solid var(--surface);
         z-index: 2;
     }
     .event-card {
-        background: #fff;
+        background: var(--surface);
         border: 2px solid;
         border-radius: 8px;
         padding: 0.6rem 1rem;
@@ -369,7 +373,7 @@
         transition: all 0.15s;
     }
     .event-card:hover {
-        box-shadow: 0 2px 8px rgba(230,0,18,0.12);
+        box-shadow: 0 2px 8px rgba(34,211,238,0.12);
     }
     .event-card .event-title {
         font-weight: 700;
@@ -383,7 +387,7 @@
     }
     .event-card .event-meta {
         font-size: 0.75rem;
-        color: #888;
+        color: var(--text-faint);
         margin-top: 0.15rem;
     }
     .event-badge {
@@ -398,24 +402,23 @@
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="ms-header">
-    <span class="ms-title">マイルストーン タイムライン</span>
-    <div class="ms-filter">
-        <label for="ms-project-select">プロジェクト:</label>
-        <select id="ms-project-select">
-            <option value="">全プロジェクト</option>
-            {% for project in projects %}
-            <option value="{{ project.id }}">{{ project.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <label class="hide-completed-toggle" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:#484848;user-select:none;white-space:nowrap;">
-        <input type="checkbox" id="ms-hide-completed" style="accent-color:#e60012;width:16px;height:16px;cursor:pointer;">
-        <span>完了を非表示</span>
-    </label>
+{% block topbar_actions %}
+<div class="ms-filter">
+    <label for="ms-project-select">プロジェクト:</label>
+    <select id="ms-project-select">
+        <option value="">全プロジェクト</option>
+        {% for project in projects %}
+        <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+    </select>
 </div>
+<label class="hide-completed-toggle" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text);user-select:none;white-space:nowrap;">
+    <input type="checkbox" id="ms-hide-completed" style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer;">
+    <span>完了を非表示</span>
+</label>
+{% endblock %}
 
+{% block content %}
 <div class="timeline" id="timeline">
     <p class="empty-message">読み込み中...</p>
 </div>
@@ -554,7 +557,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function renderEventNode(ev) {
-        const color = ev.color || "#e60012";
+        const color = ev.color || "#22d3ee";
         return `<div class="event-node">
             <div class="event-diamond" style="background:${escHtml(color)};"></div>
             <div class="event-card" style="border-color:${escHtml(color)};">
@@ -630,7 +633,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             allItems.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
 
             if (allItems.length === 0) {
-                html += '<p style="color:#aaa; font-size:0.85rem; margin-left:0.5rem;">タスクなし</p>';
+                html += '<p style="color:var(--text-faint); font-size:0.85rem; margin-left:0.5rem;">タスクなし</p>';
                 continue;
             }
 
@@ -670,17 +673,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // Hidden completed tasks summary
             if (hideCompleted && hiddenTasks.length > 0) {
-                html += `<div class="completed-summary" style="margin:0.5rem 0 1rem 1.5rem;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;">
-                    <div class="completed-summary-header" style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:#888;user-select:none;">
+                html += `<div class="completed-summary" style="margin:0.5rem 0 1rem 1.5rem;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);">
+                    <div class="completed-summary-header" style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-faint);user-select:none;">
                         <span class="completed-summary-arrow" style="font-size:0.7rem;transition:transform 0.2s;">▶</span>
                         <span>完了済みタスク (${hiddenTasks.length}件)</span>
                     </div>
                     <div class="completed-summary-list" style="display:none;padding:0 1rem 0.6rem;">
-                        ${hiddenTasks.map(t => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;font-size:0.82rem;color:#999;border-bottom:1px solid #f0f0f0;">
-                            <span style="color:#0ab44a;font-weight:700;">✓</span>
+                        ${hiddenTasks.map(t => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;font-size:0.82rem;color:var(--text-faint);border-bottom:1px solid var(--border);">
+                            <span style="color:var(--green);font-weight:700;">✓</span>
                             <span style="text-decoration:line-through;">${escHtml(t.title)}</span>
-                            <span style="margin-left:auto;font-size:0.78rem;color:#bbb;">${fmtDatetime(t.start_time)} ~ ${fmtDatetime(t.end_time)}</span>
-                            <a href="/tasks/${t.id}/edit" style="color:#e60012;text-decoration:none;font-size:0.78rem;margin-left:0.5rem;">編集</a>
+                            <span style="margin-left:auto;font-size:0.78rem;color:var(--text-faint);">${fmtDatetime(t.start_time)} ~ ${fmtDatetime(t.end_time)}</span>
+                            <a href="/tasks/${t.id}/edit" style="color:var(--accent);text-decoration:none;font-size:0.78rem;margin-left:0.5rem;">編集</a>
                         </div>`).join("")}
                     </div>
                 </div>`;

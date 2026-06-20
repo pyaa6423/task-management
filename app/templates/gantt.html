@@ -1,32 +1,22 @@
 {% extends "base.html" %}
+{% set active_page = "gantt" %}
 
 {% block title %}Gantt Chart - Task Management{% endblock %}
+{% block page_title %}ガントチャート{% endblock %}
+{% block page_subtitle %}<p class="subtitle">プロジェクト全体のスケジュール</p>{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
 {% endblock %}
 
-{% block content %}
-<div class="gantt-controls">
-    <label for="project-select">プロジェクト:</label>
+{% block topbar_actions %}
+<div class="ctrls">
     <select id="project-select">
         <option value="">全プロジェクト</option>
         {% for project in projects %}
         <option value="{{ project.id }}">{{ project.name }}</option>
         {% endfor %}
     </select>
-
-    <div class="theme-selector">
-        <label>カラー:</label>
-        <div class="theme-swatches">
-            <span class="theme-swatch active" data-theme="nintendo" style="background: #e60012;" title="Nintendo"></span>
-            <span class="theme-swatch" data-theme="mario" style="background: #049cd8;" title="Mario"></span>
-            <span class="theme-swatch" data-theme="splatoon" style="background: #2ae0c8;" title="Splatoon"></span>
-            <span class="theme-swatch" data-theme="zelda" style="background: #2d8a4e;" title="Zelda"></span>
-            <span class="theme-swatch" data-theme="kirby" style="background: #f4a4b8;" title="Kirby"></span>
-            <span class="theme-swatch" data-theme="monochrome" style="background: #484848;" title="Monochrome"></span>
-        </div>
-    </div>
 
     <div class="view-modes">
         <button data-mode="Day" class="active">Day</button>
@@ -36,16 +26,47 @@
 
     <label class="hide-completed-toggle">
         <input type="checkbox" id="hide-completed">
-        <span>完了を非表示</span>
+        <span>完了を隠す</span>
     </label>
 
+    <div class="theme-selector">
+        <div class="theme-swatches">
+            <span class="theme-swatch" data-theme="splatoon" style="background:#2ae0c8" title="Cyan"></span>
+            <span class="theme-swatch" data-theme="mario" style="background:#049cd8" title="Blue"></span>
+            <span class="theme-swatch" data-theme="zelda" style="background:#2d8a4e" title="Green"></span>
+            <span class="theme-swatch" data-theme="kirby" style="background:#f4a4b8" title="Pink"></span>
+            <span class="theme-swatch" data-theme="nintendo" style="background:#e60012" title="Red"></span>
+            <span class="theme-swatch" data-theme="monochrome" style="background:#94a3b8" title="Mono"></span>
+        </div>
+    </div>
 </div>
-<div id="gantt-container">
-    <p class="placeholder">読み込み中...</p>
+{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-head">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="5" y1="12" x2="18" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/></svg>
+        <h2>プロジェクト進捗</h2>
+        <span class="hint">バーをダブルクリックで詳細</span>
+    </div>
+    <div class="panel-body">
+        <div id="gantt-container">
+            <p class="placeholder">読み込み中...</p>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/frappe-gantt.min.js"></script>
-<script src="/static/gantt.js"></script>
+<script src="/static/gantt.js?v=dark1"></script>
+<script>
+// ガントのバー色をシアン系(splatoon)に揃える
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        const sw = document.querySelector('.theme-swatch[data-theme="splatoon"]');
+        if (sw) sw.click();
+    }, 500);
+});
+</script>
 {% endblock %}

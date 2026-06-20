@@ -1,6 +1,14 @@
 {% extends "base.html" %}
+{% set active_page = "" %}
 
 {% block title %}達成項目 - {{ task.title }}{% endblock %}
+
+{% block page_title %}達成項目{% endblock %}
+{% block page_subtitle %}<p class="subtitle">{{ task.title }}</p>{% endblock %}
+
+{% block topbar_actions %}
+<a href="/gantt" class="back-link">&#9664; ガントチャートへ戻る</a>
+{% endblock %}
 
 {% block head %}
 <style>
@@ -13,13 +21,13 @@
     .checks-title {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
     }
 
     /* Add form */
     .add-form-card {
-        background: #fff;
-        border: 2px solid #e8e8e8;
+        background: var(--surface);
+        border: 2px solid var(--border);
         border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1.5rem;
@@ -28,10 +36,10 @@
     .add-form-card h3 {
         font-size: 0.95rem;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
         margin-bottom: 1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e60012;
+        border-bottom: 2px solid var(--accent);
     }
     .form-row {
         display: flex;
@@ -53,8 +61,8 @@
     }
     .btn-add {
         padding: 0.5rem 1.25rem;
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
         border: none;
         border-radius: 6px;
         font-size: 0.9rem;
@@ -64,22 +72,22 @@
         align-self: flex-end;
         white-space: nowrap;
     }
-    .btn-add:hover { background: #c4000f; }
+    .btn-add:hover { background: var(--accent-2); }
 
     /* Stats */
     .checks-count {
         font-size: 0.85rem;
-        color: #999;
+        color: var(--text-faint);
         margin-bottom: 1rem;
     }
     .checks-count strong {
-        color: #e60012;
+        color: var(--accent);
     }
 
     /* Table */
     .checks-table-wrap {
-        background: #fff;
-        border: 1px solid #e8e8e8;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -90,31 +98,31 @@
         font-size: 0.85rem;
     }
     .checks-table thead {
-        background: #fafafa;
-        border-bottom: 2px solid #e60012;
+        background: var(--surface-3);
+        border-bottom: 2px solid var(--accent);
     }
     .checks-table th {
         padding: 0.625rem 0.75rem;
         text-align: left;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
         font-size: 0.8rem;
         white-space: nowrap;
     }
     .checks-table td {
         padding: 0.5rem 0.75rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--border);
         vertical-align: top;
-        color: #484848;
+        color: var(--text);
     }
     .checks-table tr:last-child td {
         border-bottom: none;
     }
     .checks-table tr:hover {
-        background: #fef8f8;
+        background: var(--surface-2);
     }
     .checks-table tr.checked {
-        background: #fafafa;
+        background: var(--surface-2);
     }
     .checks-table tr.checked td {
         opacity: 0.55;
@@ -132,41 +140,41 @@
         justify-content: center;
         font-size: 0.85rem;
         border-radius: 50%;
-        border: 2px solid #aaa;
-        color: #aaa;
+        border: 2px solid var(--text-faint);
+        color: var(--text-faint);
         cursor: pointer;
         transition: all 0.15s;
-        background: #fff;
+        background: var(--surface);
         margin: 0 auto;
     }
     .check-toggle:hover {
-        border-color: #0ab44a;
-        color: #0ab44a;
+        border-color: var(--green);
+        color: var(--green);
         transform: scale(1.1);
     }
     tr.checked .check-toggle {
-        background: #0ab44a;
-        border-color: #0ab44a;
+        background: var(--green);
+        border-color: var(--green);
         color: #fff;
         font-weight: 700;
     }
     tr.checked .check-toggle:hover {
-        background: #aaa;
-        border-color: #aaa;
+        background: var(--text-faint);
+        border-color: var(--text-faint);
     }
 
     /* Title cell */
     .checks-table .cell-title {
         font-weight: 600;
-        color: #333;
+        color: var(--text);
     }
     tr.checked .cell-title {
         text-decoration: line-through;
-        color: #aaa;
+        color: var(--text-faint);
     }
     .cell-date {
         font-size: 0.75rem;
-        color: #999;
+        color: var(--text-faint);
         white-space: nowrap;
     }
 
@@ -183,9 +191,9 @@
         color: #fff;
         white-space: nowrap;
     }
-    .tag-pill.inputs { background: #0068b7; }
-    .tag-pill.outputs { background: #0ab44a; }
-    .tag-pill.results { background: #f5a623; }
+    .tag-pill.inputs { background: var(--blue); }
+    .tag-pill.outputs { background: var(--green); }
+    .tag-pill.results { background: var(--amber); }
     .tag-pill.evidences { background: #9b59b6; }
 
     /* Action buttons */
@@ -193,16 +201,16 @@
         padding: 0.2rem 0.5rem;
         font-size: 0.7rem;
         font-weight: 600;
-        border: 1.5px solid #d9d9d9;
+        border: 1.5px solid var(--border-2);
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.15s;
-        background: #fff;
+        background: var(--surface);
     }
-    .btn-edit { color: #0068b7; border-color: #0068b7; }
-    .btn-edit:hover { background: #0068b7; color: #fff; }
-    .btn-delete { color: #e60012; border-color: #e60012; }
-    .btn-delete:hover { background: #e60012; color: #fff; }
+    .btn-edit { color: var(--blue); border-color: var(--blue); }
+    .btn-edit:hover { background: var(--blue); color: #fff; }
+    .btn-delete { color: var(--accent); border-color: var(--accent); }
+    .btn-delete:hover { background: var(--accent); color: var(--accent-ink); }
     .cell-actions {
         display: flex;
         gap: 0.25rem;
@@ -214,8 +222,8 @@
     .edit-row.active { display: table-row; }
     .edit-row td {
         padding: 0.75rem;
-        background: #fafafa;
-        border-bottom: 2px solid #e8e8e8;
+        background: var(--surface-2);
+        border-bottom: 2px solid var(--border);
     }
     .edit-inline {
         display: flex;
@@ -233,7 +241,7 @@
     }
     .btn-save {
         padding: 0.35rem 0.75rem;
-        background: #0ab44a;
+        background: var(--green);
         color: #fff;
         border: none;
         border-radius: 4px;
@@ -241,22 +249,22 @@
         font-weight: 600;
         cursor: pointer;
     }
-    .btn-save:hover { background: #078a39; }
+    .btn-save:hover { background: #2bb98a; }
     .btn-cancel {
         padding: 0.35rem 0.75rem;
-        background: #fff;
-        color: #666;
-        border: 1.5px solid #d9d9d9;
+        background: var(--surface);
+        color: var(--text-dim);
+        border: 1.5px solid var(--border-2);
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
     }
-    .btn-cancel:hover { border-color: #999; color: #333; }
+    .btn-cancel:hover { border-color: var(--text-faint); color: var(--text); }
 
     .empty-message {
         text-align: center;
-        color: #a0a0a0;
+        color: var(--text-faint);
         padding: 3rem;
         font-size: 0.95rem;
     }
@@ -264,11 +272,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="checks-header">
-    <a href="/gantt" class="back-link">&#9664; ガントチャートへ戻る</a>
-    <span class="checks-title">{{ task.title }} - 達成項目</span>
-</div>
-
 <!-- Add form -->
 <div class="add-form-card">
     <h3>新しい達成項目を追加</h3>
@@ -355,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderPills(arr, cls) {
-        if (!arr || arr.length === 0) return '<span style="color:#ccc;">—</span>';
+        if (!arr || arr.length === 0) return '<span style="color:var(--text-faint);">—</span>';
         return arr.map(v => `<span class="tag-pill ${cls}">${escHtml(v)}</span>`).join(" ");
     }
 

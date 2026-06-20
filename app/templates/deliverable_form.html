@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% set active_page = "projects" %}
 
 {% block title %}{% if is_edit %}成果物編集{% else %}成果物追加{% endif %} - Task Management{% endblock %}
+
+{% block page_title %}成果物{% endblock %}
 
 {% block head %}
 <style>
@@ -10,11 +13,11 @@
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
-    .form-title { font-size: 1.25rem; font-weight: 700; color: #333; }
+    .form-title { font-size: 1.25rem; font-weight: 700; color: var(--text); }
 
     .form-card {
-        background: #fff;
-        border: 2px solid #e8e8e8;
+        background: var(--surface);
+        border: 2px solid var(--border);
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -22,8 +25,8 @@
     }
     .form-card-header {
         padding: 0.75rem 1.25rem;
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
         font-weight: 700;
         font-size: 0.95rem;
     }
@@ -34,7 +37,7 @@
         display: block;
         margin-bottom: 0.25rem;
         font-weight: 600;
-        color: #333;
+        color: var(--text);
         font-size: 0.9rem;
     }
     .form-group input,
@@ -42,22 +45,24 @@
     .form-group textarea {
         width: 100%;
         padding: 0.5rem 0.75rem;
-        border: 2px solid #d9d9d9;
+        border: 2px solid var(--border-2);
         border-radius: 6px;
         font-size: 0.9rem;
         font-family: inherit;
         box-sizing: border-box;
+        background: var(--surface);
+        color: var(--text);
     }
     .form-group textarea { min-height: 70px; resize: vertical; }
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #e60012;
+        border-color: var(--accent);
     }
     .form-group .hint {
         font-size: 0.78rem;
-        color: #888;
+        color: var(--text-faint);
         margin-top: 0.25rem;
     }
     .form-row {
@@ -73,8 +78,8 @@
     }
     .btn-submit {
         padding: 0.5rem 1.5rem;
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
         border: none;
         border-radius: 6px;
         font-size: 0.9rem;
@@ -82,12 +87,12 @@
         cursor: pointer;
         transition: background 0.2s;
     }
-    .btn-submit:hover { background: #b8000e; }
+    .btn-submit:hover { background: var(--accent-2); }
     .btn-delete {
         padding: 0.5rem 1.5rem;
-        background: #fff;
-        color: #e60012;
-        border: 2px solid #e60012;
+        background: var(--surface);
+        color: var(--red);
+        border: 2px solid var(--red);
         border-radius: 6px;
         font-size: 0.9rem;
         font-weight: 600;
@@ -95,21 +100,21 @@
         transition: all 0.2s;
         margin-left: auto;
     }
-    .btn-delete:hover { background: #e60012; color: #fff; }
+    .btn-delete:hover { background: var(--red); color: #fff; }
 
     .back-link {
-        color: #555;
+        color: var(--text-dim);
         text-decoration: none;
         font-size: 0.9rem;
     }
-    .back-link:hover { color: #e60012; }
+    .back-link:hover { color: var(--accent); }
 
     .field-tip {
-        background: #fff7ea;
-        border-left: 3px solid #f5a623;
+        background: var(--surface-2);
+        border-left: 3px solid var(--amber);
         padding: 0.4rem 0.7rem;
         font-size: 0.78rem;
-        color: #6b5b3e;
+        color: var(--text-dim);
         border-radius: 0 4px 4px 0;
         margin-top: 0.25rem;
     }

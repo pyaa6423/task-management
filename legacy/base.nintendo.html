@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Task Management{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1><a href="/gantt">Task Management</a></h1>
+        <nav class="header-nav">
+            <a href="/gantt" class="header-nav-link">ガントチャート</a>
+            <a href="/milestones" class="header-nav-link">マイルストーン</a>
+            <a href="/projects/status" class="header-nav-link">プロジェクト状況</a>
+            <a href="/events" class="header-nav-link">予定</a>
+            <a href="/daily" class="header-nav-link">デイリー</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

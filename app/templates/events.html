@@ -1,6 +1,10 @@
 {% extends "base.html" %}
+{% set active_page = "events" %}
 
 {% block title %}予定管理 - Task Management{% endblock %}
+
+{% block page_title %}予定{% endblock %}
+{% block page_subtitle %}<p class="subtitle">スケジュールと予定の管理</p>{% endblock %}
 
 {% block head %}
 <style>
@@ -13,7 +17,7 @@
     .ev-title {
         font-size: 1.35rem;
         font-weight: 700;
-        color: #333;
+        color: var(--text);
     }
     .ev-filter {
         display: flex;
@@ -24,27 +28,27 @@
     .ev-filter label {
         font-size: 0.85rem;
         font-weight: 600;
-        color: #484848;
+        color: var(--text);
     }
     .ev-filter select {
         padding: 0.4rem 0.75rem;
         font-size: 0.9rem;
-        border: 2px solid #d9d9d9;
+        border: 2px solid var(--border-2);
         border-radius: 6px;
-        background: #fff;
-        color: #484848;
+        background: var(--surface);
+        color: var(--text);
         outline: none;
         min-width: 180px;
         transition: border-color 0.2s;
     }
     .ev-filter select:focus {
-        border-color: #e60012;
+        border-color: var(--accent);
     }
 
     /* Add form */
     .ev-form {
-        background: #fff;
-        border: 2px solid #e8e8e8;
+        background: var(--surface);
+        border: 2px solid var(--border);
         border-radius: 10px;
         padding: 1.25rem;
         margin-bottom: 2rem;
@@ -54,7 +58,7 @@
         margin: 0 0 1rem 0;
         font-size: 1rem;
         font-weight: 700;
-        color: #e60012;
+        color: var(--accent);
     }
     .ev-form-row {
         display: flex;
@@ -71,14 +75,14 @@
     .ev-form-group label {
         font-size: 0.78rem;
         font-weight: 600;
-        color: #555;
+        color: var(--text-dim);
     }
     .ev-form-group input,
     .ev-form-group select,
     .ev-form-group textarea {
         padding: 0.4rem 0.6rem;
         font-size: 0.9rem;
-        border: 2px solid #d9d9d9;
+        border: 2px solid var(--border-2);
         border-radius: 6px;
         outline: none;
         transition: border-color 0.2s;
@@ -86,7 +90,7 @@
     .ev-form-group input:focus,
     .ev-form-group select:focus,
     .ev-form-group textarea:focus {
-        border-color: #e60012;
+        border-color: var(--accent);
     }
     .ev-form-group input[type="color"] {
         width: 40px;
@@ -109,32 +113,32 @@
         transition: all 0.15s;
     }
     .ev-btn-primary {
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
     }
     .ev-btn-primary:hover {
-        background: #c4000f;
+        background: var(--accent-2);
     }
     .ev-btn-danger {
-        background: #fff;
-        color: #e60012;
-        border: 2px solid #e60012;
+        background: var(--surface);
+        color: var(--accent);
+        border: 2px solid var(--accent);
         padding: 0.3rem 0.75rem;
         font-size: 0.78rem;
     }
     .ev-btn-danger:hover {
-        background: #e60012;
-        color: #fff;
+        background: var(--accent);
+        color: var(--accent-ink);
     }
     .ev-btn-edit {
-        background: #fff;
-        color: #0068b7;
-        border: 2px solid #0068b7;
+        background: var(--surface);
+        color: var(--blue);
+        border: 2px solid var(--blue);
         padding: 0.3rem 0.75rem;
         font-size: 0.78rem;
     }
     .ev-btn-edit:hover {
-        background: #0068b7;
+        background: var(--blue);
         color: #fff;
     }
 
@@ -148,8 +152,8 @@
         font-size: 0.9rem;
     }
     .ev-table th {
-        background: #484848;
-        color: #fff;
+        background: var(--surface-3);
+        color: var(--text);
         padding: 0.6rem 0.75rem;
         text-align: left;
         font-weight: 600;
@@ -158,18 +162,18 @@
     }
     .ev-table td {
         padding: 0.6rem 0.75rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border);
         vertical-align: middle;
     }
     .ev-table tr:hover td {
-        background: #fafafa;
+        background: var(--surface-2);
     }
     .ev-color-dot {
         display: inline-block;
         width: 14px;
         height: 14px;
         border-radius: 3px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--border-2);
         vertical-align: middle;
     }
     .ev-project-badge {
@@ -178,13 +182,13 @@
         padding: 0.15rem 0.5rem;
         border-radius: 10px;
         font-weight: 600;
-        background: #f0f0f0;
-        color: #555;
+        background: var(--surface-2);
+        color: var(--text-dim);
     }
     .ev-project-badge.global {
-        background: #fff5f5;
-        color: #e60012;
-        border: 1px solid #fcc;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid var(--border-2);
     }
     .ev-actions {
         display: flex;
@@ -192,7 +196,7 @@
     }
     .ev-empty {
         text-align: center;
-        color: #aaa;
+        color: var(--text-faint);
         padding: 2rem;
         font-size: 0.95rem;
     }
@@ -200,14 +204,14 @@
     .ev-edit-input {
         padding: 0.3rem 0.5rem;
         font-size: 0.85rem;
-        border: 2px solid #0068b7;
+        border: 2px solid var(--blue);
         border-radius: 4px;
         outline: none;
         width: 100%;
         box-sizing: border-box;
     }
     .ev-btn-save {
-        background: #0ab44a;
+        background: var(--green);
         color: #fff;
         border: none;
         padding: 0.3rem 0.75rem;
@@ -217,38 +221,37 @@
         font-weight: 600;
     }
     .ev-btn-save:hover {
-        background: #078a39;
+        background: var(--green);
     }
     .ev-btn-cancel {
-        background: #fff;
-        color: #999;
-        border: 2px solid #ccc;
+        background: var(--surface);
+        color: var(--text-faint);
+        border: 2px solid var(--border-2);
         padding: 0.3rem 0.75rem;
         font-size: 0.78rem;
         border-radius: 6px;
         cursor: pointer;
     }
     .ev-btn-cancel:hover {
-        border-color: #999;
-        color: #555;
+        border-color: var(--text-faint);
+        color: var(--text-dim);
     }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="ev-header">
-    <span class="ev-title">予定管理</span>
-    <div class="ev-filter">
-        <label for="ev-filter-select">プロジェクト:</label>
-        <select id="ev-filter-select">
-            <option value="">すべて</option>
-            {% for project in projects %}
-            <option value="{{ project.id }}">{{ project.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
+{% block topbar_actions %}
+<div class="ev-filter">
+    <label for="ev-filter-select">プロジェクト:</label>
+    <select id="ev-filter-select">
+        <option value="">すべて</option>
+        {% for project in projects %}
+        <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+    </select>
 </div>
+{% endblock %}
 
+{% block content %}
 <div class="ev-form" id="ev-add-form">
     <h3>予定を追加</h3>
     <div class="ev-form-row">
